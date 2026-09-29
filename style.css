@@ -1,0 +1,238 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  /* Temă Light - Stil Cyber-Industrial */
+  --bg: #eef2f6;
+  --card: #ffffff;
+  --text: #111827;
+  --muted: #64748b;
+  --accent: #0284c7;        /* Albastru cyan intens */
+  --accent-dark: #0369a1;
+  --accent-soft: #e0f2fe;
+  --border: #cbd5e1;
+
+  /* Culorile specifice pentru etichetele de format */
+  --badge-flac: #059669;    /* Verde smarald / hi-fi */
+  --badge-mp3: #d97706;     /* Portocaliu / standard */
+  --badge-synth: #7c3aed;   /* Violet neon / chiptune */
+}
+
+body {
+  margin: 0;
+  font-family: "Courier New", Consolas, Menlo, Monaco, monospace, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* 4.2. Antetul */
+.app-header {
+  background: var(--accent);
+  color: #ffffff;
+  text-align: center;
+  padding: 32px 16px;
+  border-bottom: 3px solid var(--accent-dark);
+}
+
+.app-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 2rem;
+  letter-spacing: 1px;
+}
+
+.app-header p {
+  margin: 4px 0;
+}
+
+.app-count {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* 4.3. Grid Container (2 coloane pe desktop) */
+.container {
+  max-width: 1000px;
+  margin: 28px auto;
+  padding: 0 16px;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 24px;
+  align-items: start;
+}
+
+/* 4.4. Panourile */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.panel h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 1.25rem;
+  border-bottom: 2px solid var(--accent-soft);
+  padding-bottom: 8px;
+}
+
+/* 4.5. Formularul (Flexbox vertical) */
+.item-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.item-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: bold;
+}
+
+.item-form input,
+.item-form select {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  background-color: var(--card);
+  color: var(--text);
+}
+
+.item-form button {
+  background: var(--accent);
+  color: #ffffff;
+  border: none;
+  padding: 12px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.item-form button:hover {
+  background: var(--accent-dark);
+}
+
+/* 4.6. Lista și Cardurile */
+.item-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.item-card:hover {
+  border-color: var(--accent);
+  background-color: var(--accent-soft);
+}
+
+.card-details h3 {
+  margin: 0 0 6px 0;
+  font-size: 1rem;
+}
+
+.status {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* 4.7. Etichete / Badges */
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  color: #ffffff;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.badge-flac { background-color: var(--badge-flac); }
+.badge-mp3 { background-color: var(--badge-mp3); }
+.badge-synth { background-color: var(--badge-synth); }
+
+/* 4.8. Elementul finalizat (done) */
+.item-card.done h3 {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.item-card.done {
+  opacity: 0.8;
+}
+
+/* Footer */
+.app-footer {
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* 4.9. Ecrane înguste (Responsive / Mobile) */
+@media (max-width: 700px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Pasul 5: Stări interactive / Focus vizibil */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Pasul 5: Tema întunecată (Dark Mode - Full Cyberdeck vibe) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #090d16;          /* Negru profund / terminal */
+    --card: #111827;        /* Panou consolă */
+    --text: #a600ff;        /* Cyan neon retro */
+    --muted: #64748b;
+    --border: #1e293b;
+    --accent: #c300ff;
+    --accent-dark: #0284c7;
+    --accent-soft: #082f49;
+
+    --badge-flac: #10b981;
+    --badge-mp3: #ffea00;
+    --badge-synth: #ff0000;
+  }
+
+  .app-header {
+    background: #0f172a;
+    color: #a600ff;
+    border-bottom: 2px solid #c300ff;
+  }
+
+  .item-form button {
+    background: #c300ff;
+    color: #090d16;
+  }
+
+  .item-form button:hover {
+    background: #c300ff;
+  }
+}

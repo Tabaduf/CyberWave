@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CyberWave - Bibliotecă de muzică</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>CyberWave</h1>
+    <p>Bibliotecă audio fără reclame și consolă de redare Cyberdeck.</p>
+    <p class="app-count">3 piese în sistem, dintre care 2 în așteptare</p>
+  </header>
+
+  <main class="container">
+    <!-- Panoul formularului de adăugare -->
+    <section class="panel">
+      <h2>Adaugă piesă audio</h2>
+      <form class="item-form">
+        <label>
+          Titlu piesă
+          <input type="text" name="titlu" placeholder="Ex: Perturbator - Future Club" required />
+        </label>
+        <label>
+          Format audio
+          <select name="eticheta">
+            <option value="flac">FLAC (Lossless)</option>
+            <option value="mp3">MP3 (320kbps)</option>
+            <option value="synth">Synth (Chiptune / MIDI)</option>
+          </select>
+        </label>
+        <button type="submit">Încarcă în Deck</button>
+      </form>
+    </section>
+
+    <!-- Panoul cu lista de piese -->
+    <section class="panel">
+      <h2>Piese din terminal</h2>
+      <!-- Când lista e goală: <p class="empty">Nu există nicio piesă în consolă.</p> -->
+      <ul class="item-list">
+        <li class="item-card">
+          <div class="card-details">
+            <h3>Master Boot Record - CHKDSK</h3>
+            <span class="badge badge-flac">FLAC</span>
+          </div>
+          <span class="status">În așteptare</span>
+        </li>
+
+        <li class="item-card done">
+          <div class="card-details">
+            <h3>Perturbator - Future Club</h3>
+            <span class="badge badge-mp3">MP3</span>
+          </div>
+          <span class="status">Ascultată</span>
+        </li>
+
+        <li class="item-card">
+          <div class="card-details">
+            <h3>Keygen Church - Tenebre Rosso Sangue</h3>
+            <span class="badge badge-synth">Synth</span>
+          </div>
+          <span class="status">În așteptare</span>
+        </li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    Proiect Tehnologii Web &bull; CyberWave Audio Terminal
+  </footer>
+</body>
+</html>
