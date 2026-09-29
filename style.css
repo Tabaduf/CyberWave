@@ -1,238 +1,158 @@
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 :root {
-  /* Temă Light - Stil Cyber-Industrial */
-  --bg: #eef2f6;
-  --card: #ffffff;
-  --text: #111827;
-  --muted: #64748b;
-  --accent: #0284c7;        /* Albastru cyan intens */
-  --accent-dark: #0369a1;
-  --accent-soft: #e0f2fe;
-  --border: #cbd5e1;
-
-  /* Culorile specifice pentru etichetele de format */
-  --badge-flac: #059669;    /* Verde smarald / hi-fi */
-  --badge-mp3: #d97706;     /* Portocaliu / standard */
-  --badge-synth: #7c3aed;   /* Violet neon / chiptune */
+  /* Tema Terminal (Verde Neon pe Negru) */
+  --bg: #050505; /* Negru aproape pur */
+  --card: #0a0f0a; /* O nuanță foarte închisă de verde/negru */
+  --text: #00ff41; /* Verde clasic Matrix/Terminal */
+  --muted: #00701c; /* Verde închis pentru text estompat */
+  --border: #00ff41; /* Chenare neon */
+  --accent: #00ff41;
+  
+  /* Păstrăm etichetele diferite, dar în tonuri retro */
+  --badge-flac: #00ff41; /* Verde */
+  --badge-mp3: #ffcc00;  /* Chihlimbar */
+  --badge-synth: #cc00ff; /* Magenta retro */
 }
 
 body {
   margin: 0;
-  font-family: "Courier New", Consolas, Menlo, Monaco, monospace, sans-serif;
+  font-family: 'Courier New', Courier, monospace; /* Font de terminal */
   background-color: var(--bg);
   color: var(--text);
   line-height: 1.5;
+  text-transform: uppercase; /* Forțăm litere mari pentru vibe-ul de consolă */
 }
 
-/* 4.2. Antetul */
+/* Efect opțional de scanline subtil pe tot corpul paginii */
+body::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 2;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none;
+}
+
+
+/* Antetul */
 .app-header {
-  background: var(--accent);
-  color: #ffffff;
+  border-bottom: 2px dashed var(--border);
+  padding: 20px;
   text-align: center;
-  padding: 32px 16px;
-  border-bottom: 3px solid var(--accent-dark);
+}
+.header-glitch h1 { margin: 0; letter-spacing: 2px; }
+
+/* Vizualizatorul Fals (Grafic static pentru Etapa 1) */
+.hud-visualizer {
+    width: 80%;
+    max-width: 400px;
+    height: 60px;
+    margin: 15px auto;
+    border: 1px solid var(--border);
+    position: relative;
+    background-image: 
+      linear-gradient(var(--muted) 1px, transparent 1px),
+      linear-gradient(90deg, var(--muted) 1px, transparent 1px);
+    background-size: 10px 10px; /* Grila */
+}
+.hud-visualizer .wave {
+    /* O formă CSS simplă care imită o undă - temporar static */
+    position: absolute;
+    top: 50%;
+    left: 10%;
+    right: 10%;
+    height: 2px;
+    background: var(--text);
+    box-shadow: 0 0 5px var(--text);
+    transform: translateY(-50%);
 }
 
-.app-header h1 {
-  margin: 0 0 8px 0;
-  font-size: 2rem;
-  letter-spacing: 1px;
-}
+.app-count { font-size: 0.8rem; border-top: 1px solid var(--muted); padding-top: 5px; display: inline-block;}
 
-.app-header p {
-  margin: 4px 0;
-}
-
-.app-count {
-  font-size: 0.9rem;
-  opacity: 0.9;
-}
-
-/* 4.3. Grid Container (2 coloane pe desktop) */
+/* Container & Panouri */
 .container {
   max-width: 1000px;
-  margin: 28px auto;
+  margin: 20px auto;
   padding: 0 16px;
   display: grid;
   grid-template-columns: 1fr 2fr;
-  gap: 24px;
-  align-items: start;
+  gap: 20px;
 }
 
-/* 4.4. Panourile */
 .panel {
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 15px;
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.1); /* Strălucire fină */
 }
 
 .panel h2 {
   margin-top: 0;
-  margin-bottom: 16px;
-  font-size: 1.25rem;
-  border-bottom: 2px solid var(--accent-soft);
-  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 5px;
+  font-size: 1.1rem;
 }
 
-/* 4.5. Formularul (Flexbox vertical) */
-.item-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.item-form label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 0.9rem;
-  font-weight: bold;
-}
-
-.item-form input,
-.item-form select {
-  padding: 10px 12px;
+/* Formular */
+.item-form { display: flex; flex-direction: column; gap: 15px; }
+.item-form label { display: flex; flex-direction: column; font-size: 0.9rem; }
+.item-form input, .item-form select {
+  background: transparent;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 0.95rem;
-  background-color: var(--card);
   color: var(--text);
+  padding: 8px;
+  font-family: inherit;
+  margin-top: 5px;
 }
-
+.item-form input:focus { outline: none; border-color: #fff; box-shadow: 0 0 5px var(--border); }
 .item-form button {
-  background: var(--accent);
-  color: #ffffff;
-  border: none;
-  padding: 12px;
-  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  border: 1px solid var(--border);
+  padding: 10px;
   font-family: inherit;
   font-weight: bold;
-  font-size: 0.95rem;
   cursor: pointer;
-  transition: background 0.2s ease, transform 0.1s ease;
 }
+.item-form button:hover { background: transparent; color: var(--text); }
 
-.item-form button:hover {
-  background: var(--accent-dark);
-}
-
-/* 4.6. Lista și Cardurile */
-.item-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
+/* Listă & Carduri */
+.item-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .item-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 16px;
+  display: flex; justify-content: space-between; align-items: center;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--card);
-  transition: border-color 0.2s, background-color 0.2s;
+  padding: 10px;
+  background: rgba(0,255,65, 0.05);
 }
+.item-card:hover { background: rgba(0,255,65, 0.2); }
+.card-details h3 { margin: 0 0 5px 0; font-size: 1rem; }
 
-.item-card:hover {
-  border-color: var(--accent);
-  background-color: var(--accent-soft);
-}
-
-.card-details h3 {
-  margin: 0 0 6px 0;
-  font-size: 1rem;
-}
-
-.status {
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-/* 4.7. Etichete / Badges */
+/* Etichete */
 .badge {
-  display: inline-block;
-  font-size: 0.75rem;
-  padding: 2px 8px;
-  border-radius: 12px;
-  color: #ffffff;
-  font-weight: bold;
-  letter-spacing: 0.5px;
+  font-size: 0.7rem; padding: 2px 6px; border: 1px solid currentColor;
 }
+.badge-flac { color: var(--badge-flac); }
+.badge-mp3 { color: var(--badge-mp3); }
+.badge-synth { color: var(--badge-synth); }
 
-.badge-flac { background-color: var(--badge-flac); }
-.badge-mp3 { background-color: var(--badge-mp3); }
-.badge-synth { background-color: var(--badge-synth); }
+/* Finalizat */
+.item-card.done h3 { text-decoration: line-through; color: var(--muted); }
+.item-card.done .status { color: var(--muted); }
 
-/* 4.8. Elementul finalizat (done) */
-.item-card.done h3 {
-  text-decoration: line-through;
-  color: var(--muted);
-}
+/* Subsol */
+.app-footer { text-align: center; font-size: 0.8rem; margin-top: 40px; color: var(--muted); }
 
-.item-card.done {
-  opacity: 0.8;
-}
+/* Responsive & Focus */
+@media (max-width: 700px) { .container { grid-template-columns: 1fr; } }
+:focus-visible { outline: 2px solid var(--border); outline-offset: 2px; }
 
-/* Footer */
-.app-footer {
-  text-align: center;
-  padding: 24px 16px;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-/* 4.9. Ecrane înguste (Responsive / Mobile) */
-@media (max-width: 700px) {
-  .container {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Pasul 5: Stări interactive / Focus vizibil */
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* Pasul 5: Tema întunecată (Dark Mode - Full Cyberdeck vibe) */
+/* Menținem compatibilitatea cu cerința de Dark Mode, deși tema noastră este deja dark */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #090d16;          /* Negru profund / terminal */
-    --card: #111827;        /* Panou consolă */
-    --text: #a600ff;        /* Cyan neon retro */
-    --muted: #64748b;
-    --border: #1e293b;
-    --accent: #c300ff;
-    --accent-dark: #0284c7;
-    --accent-soft: #082f49;
-
-    --badge-flac: #10b981;
-    --badge-mp3: #ffea00;
-    --badge-synth: #ff0000;
-  }
-
-  .app-header {
-    background: #0f172a;
-    color: #a600ff;
-    border-bottom: 2px solid #c300ff;
-  }
-
-  .item-form button {
-    background: #c300ff;
-    color: #090d16;
-  }
-
-  .item-form button:hover {
-    background: #c300ff;
-  }
+    /* Valorile sunt deja setate corect pentru dark mode */
 }
