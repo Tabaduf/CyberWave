@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DeckWave - Cyberdeck Audio Terminal</title>
+  <title>CyberWave </title>
+  <link rel="icon" type="image/png" href="Logo.png" />
   
   <style>
     * { 
@@ -87,6 +88,14 @@
       letter-spacing: 2px; 
       text-shadow: 0 0 5px var(--accent);
       text-transform: uppercase;
+    }
+
+    .header-logo {
+      display: block;
+      width: 180px;
+      max-width: 60vw;
+      height: auto;
+      margin: 0 auto 12px;
     }
     
     .header-glitch p { margin: 5px 0; }
@@ -251,21 +260,21 @@
          ;:                    :;        
         ::                      ::       
         ::                      ::       
-        ':                      :        
-         :.                    :         
-      ;' ::                    ::  '     
+        ':                      :'       
+        :.                     :;        
+     ;  ::                     ::   '     
     .'  ';                    ;'    '.    
    ::    :;                  ;:     ::   
    ;      :;.              ,;:      ::   
-   :;      :;:            ,;"      ::   
+   :;      :;:   ;   ;    ,;"      ::   
    ::.      ':;  ;.,.;  ;:'      ,.;:   
     "'"...   '::,::::: ;:    .;.;""'    
         '"""....;:::::;,;.;"""          
     .:::.....'"':::::::'",...;::::;.    
-   ;:' '""'"";.,;:::::;.'""""""  ':;    
-  ::'         ;::;:::;::..         :;  
- ::         ,;:::::::::::;:..       ':: 
- ;'     ,;;:;::::::::::::::;";..     ':.
+   ;:' '""'"";.,;:::::;.'""""""    ':;    
+  ::'         ;::;:::;::..           ;:;  
+ ::         ,;:::::::::::;:..         ':: 
+ ;'      ;;:;::::::::::::::;";..      ':.
 ::      ;:"  ::::::"""'::::::  ":     ::
  :.    ::   ::::::;   :::::::  ::     ;' 
   ;    ::   :::::::   :::::::  ::    ;' 
@@ -281,8 +290,8 @@
     </pre>
 
     <div class="header-glitch">
-        <h1>// DECKWAVE_OS</h1>
-        <p>SYSTEM.AUDIO.INTERFACE_v1.0</p>
+        <h1>// CyberDeck</h1>
+        <p>SYSTEM.AUDIO.INTERFACE</p>
     </div>
     <p class="app-count">[SYS_MSG]: 3 TRACKS FOUND. 2 PENDING.</p>
   </header>
@@ -336,12 +345,14 @@
   </main>
 
   <footer class="app-footer">
-    [SYS] END OF FILE / DECKWAVE TERMINAL
+    [SYS] END OF FILE / CYBERDECK TERMINAL
   </footer>
 
   <!-- Vizualizatorul cu animație CSS plasat la baza ecranului -->
   <div class="hud-visualizer">
       <div class="wave"></div>
   </div>
+  <!-- Etapa 2: logica pe date (doar consolă, nu modifică pagina) -->
+  <script src="piese.js"></script>
 </body>
 </html>
