@@ -26,11 +26,16 @@ Sample data used across all stages:
 Details per stage: see the ai-log/ folder.
 
 ## How to run
-Open index.html in a browser. No build step, no server.
+cd frontend
+npm install
+npm run dev
+Then open the address printed in the terminal (http://localhost:5173).
 
 ## Status
 - [x] Stage 1: static mockup
-- [ ] Stage 2: data logic in JavaScript
+- [x] Stage 2: data logic in JavaScript
+- [x] Stage 3: The app now lives in `frontend/`, built with Vite. The track data from stage 2
+moved into the main component; the queue is still printed raw.
 
 ## Checklist
 
