@@ -1,33 +1,75 @@
 /* ============================================================
    CYBERWAVE // App.css
-   Stilurile din Etapa 1, copiate integral din mockup.
-   Diferențe: .container are o singură coloană și s-a adăugat .empty (Etapa 4).
+   Stilurile din Etapa 1, plus interfața nouă: meniuri sus,
+   genuri cu palete proprii, player cu disc de vinil,
+   liked / random / playlists, like și adăugare în playlist.
    ============================================================ */
 
 * {
   box-sizing: border-box;
 }
 
+/* ------------------------------------------------------------
+   CULORI
+   @property "înregistrează" variabilele ca fiind culori.
+   Fără asta, browserul nu știe să treacă lin de la o culoare
+   la alta, iar schimbarea paletei ar fi bruscă.
+   ------------------------------------------------------------ */
+@property --text         { syntax: '<color>'; inherits: true; initial-value: #d942ff; }
+@property --muted        { syntax: '<color>'; inherits: true; initial-value: #8b3ab3; }
+@property --border       { syntax: '<color>'; inherits: true; initial-value: #b026ff; }
+@property --accent       { syntax: '<color>'; inherits: true; initial-value: #d942ff; }
+@property --accent-hover { syntax: '<color>'; inherits: true; initial-value: #ff73ff; }
+
 :root {
-  /* Tema Terminal (Mov Neon pe Negru) */
+  /* Tema Terminal (Mov Neon pe Negru) = paleta implicită */
   --bg: #07030a;
-  --card: #13081c;
   --text: #d942ff;
   --muted: #8b3ab3;
   --border: #b026ff;
   --accent: #d942ff;
   --accent-hover: #ff73ff;
 
-  /* Etichete */
+  /* Etichete de format */
   --badge-flac: #00f0ff;
   --badge-mp3: #ff007f;
   --badge-synth: #7000ff;
+
+  /* Durata comună a tranzițiilor (interfața "fluidă") */
+  --ease: 0.25s ease;
 }
+
+/* Fundalul panourilor e un negru nuanțat cu culoarea paletei.
+   color-mix amestecă două culori: aici 10% chenar + 90% negru. */
+:root, [data-gen] {
+  --card: color-mix(in srgb, var(--border) 10%, #07030a);
+}
+
+/* --- Paletele genurilor ---
+   data-gen e pus pe .app (după piesa de pe disc), pe pastilele de gen,
+   pe etichetele de gen din carduri și pe playlisturi. */
+[data-gen="all"]        { --text: #d942ff; --muted: #8b3ab3; --border: #b026ff; --accent: #d942ff; --accent-hover: #ff73ff; }
+/* apus de soare: roz + portocaliu */
+[data-gen="synthwave"]  { --text: #ff71ce; --muted: #b0537f; --border: #ff2a6d; --accent: #ffb86c; --accent-hover: #ffd319; }
+/* întunecat, agresiv: roșu sânge */
+[data-gen="darksynth"]  { --text: #ff3b3b; --muted: #8a1f2b; --border: #d10024; --accent: #ff3b3b; --accent-hover: #ff7070; }
+/* consolă de jocuri: verde + galben */
+[data-gen="chiptune"]   { --text: #8bff4a; --muted: #3f8a2a; --border: #39ff14; --accent: #ffe600; --accent-hover: #fff27a; }
+/* metal și rugină: oțel + portocaliu */
+[data-gen="industrial"] { --text: #ff8c32; --muted: #7d6a5a; --border: #c0c4c8; --accent: #ff8c32; --accent-hover: #ffb37a; }
+/* pastel anii '90: roz + bleu */
+[data-gen="vaporwave"]  { --text: #ff9ff3; --muted: #8f7fb3; --border: #48dbfb; --accent: #ff9ff3; --accent-hover: #c8f7ff; }
+/* cald, relaxat: maro + crem */
+[data-gen="lo-fi"]      { --text: #e8c39e; --muted: #8d7058; --border: #c08a5b; --accent: #e8c39e; --accent-hover: #fff0db; }
+/* rapid, electric: verde acid + albastru */
+[data-gen="drum&bass"]  { --text: #00ffa3; --muted: #1f8a6a; --border: #00b3ff; --accent: #00ffa3; --accent-hover: #8affd8; }
+/* calm, spațial: albastru deschis */
+[data-gen="ambient"]    { --text: #9fd8ff; --muted: #4d7393; --border: #3a8dde; --accent: #9fd8ff; --accent-hover: #d4eeff; }
 
 body {
   margin: 0;
   font-family: 'Courier New', Courier, monospace;
-  background-color: var(--bg);
+  background: var(--bg);
   color: var(--text);
   line-height: 1.5;
   /* Spațiu la bază ca vizualizatorul fix să nu acopere subsolul */
@@ -46,38 +88,92 @@ body::after {
   pointer-events: none;
 }
 
-/* Antetul */
-.app-header {
+/* Aplicația: culorile trec lin la paleta noului gen (0.8 s) */
+.app {
+  color: var(--text);
+  transition:
+    --text 0.8s ease,
+    --muted 0.8s ease,
+    --border 0.8s ease,
+    --accent 0.8s ease,
+    --accent-hover 0.8s ease;
+}
+
+/* Strălucirea din spatele paginii, în culoarea genului */
+.app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse at 50% -10%,
+    color-mix(in srgb, var(--border) 22%, transparent),
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+/* Tot conținutul stă deasupra păianjenului din fundal */
+.app-header, .top-nav, .container, .app-footer {
   position: relative;
-  border-bottom: 2px dashed var(--border);
-  padding: 30px 20px;
+  z-index: 1;
+}
+
+/* Resetăm aspectul implicit al butoanelor */
+button {
+  font-family: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+
+/* ------------------------------------------------------------
+   PĂIANJENUL: fixat pe stânga, centrat pe verticală
+   ------------------------------------------------------------ */
+.ascii-spider {
+  position: fixed;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%); /* mută desenul în sus cu jumătate din înălțimea lui */
+  z-index: 0;
+  margin: 0;
+  font-size: 0.6rem;
+  line-height: 1.1;
+  font-weight: bold;
+  color: var(--border);
+  text-shadow: 0 0 8px var(--border);
+  opacity: 0.55;
+  pointer-events: none; /* nu blochează click-urile */
+  animation: spider-pulse 4s ease-in-out infinite;
+}
+
+/* Păianjenul "respiră" încet */
+@keyframes spider-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.65; }
+}
+
+/* Pe ecrane mai înguste stă în spatele panourilor, abia vizibil */
+@media (max-width: 1300px) {
+  .ascii-spider { animation: none; opacity: 0.15; }
+}
+@media (max-width: 700px) {
+  .ascii-spider { display: none; }
+}
+
+
+/* ------------------------------------------------------------
+   ANTET
+   ------------------------------------------------------------ */
+.app-header {
+  padding: 28px 20px 18px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 120px;
-}
-
-/* Păianjenul poziționat în stânga ecranului */
-.ascii-spider {
-  position: absolute;
-  left: 20px;
-  top: 10px;
-  font-size: 0.65rem; /* Dimensiune redusă să încapă elegant */
-  line-height: 1.1;
-  color: #ff007f;
-  text-shadow: 0 0 8px #ff007f;
-  margin: 0;
-  font-weight: bold;
-  text-align: left;
-}
-
-/* Estompăm / ascundem păianjenul pe ecrane mici, ca să nu acopere titlul */
-@media (max-width: 900px) {
-  .ascii-spider { opacity: 0.2; }
-}
-@media (max-width: 700px) {
-  .ascii-spider { display: none; }
 }
 
 .header-glitch h1 {
@@ -88,16 +184,135 @@ body::after {
 }
 
 .header-glitch p { margin: 5px 0; }
-.app-count { font-size: 0.8rem; border-top: 1px solid var(--muted); padding-top: 5px; margin-top: 15px; }
+.app-count { font-size: 0.8rem; border-top: 1px solid var(--muted); padding-top: 5px; margin: 12px 0 0; }
 
-/* Container */
+
+/* ------------------------------------------------------------
+   MENIURILE DE SUS (taburi + genuri), lipite sus la scroll
+   ------------------------------------------------------------ */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 2px dashed var(--border);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 35%, transparent);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(6px); /* fundal mat sub meniu când derulezi */
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Un tab */
+.tab {
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: background var(--ease), color var(--ease), border-color var(--ease), box-shadow var(--ease);
+}
+.tab:hover { border-color: var(--border); }
+
+/* Numărul de piese apreciate, lângă LIKED_SONGS */
+.tab-count {
+  display: inline-block;
+  min-width: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  background: color-mix(in srgb, var(--text) 25%, transparent);
+}
+.tab.activ .tab-count { background: var(--bg); color: var(--text); }
+
+/* Tabul ales */
+.tab.activ {
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 0 12px var(--accent);
+}
+
+/* Genuri */
+.genre-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.genre-label { font-size: 0.75rem; color: var(--muted); margin-right: 4px; }
+
+/* Un gen = o "pastilă" în culorile genului ei */
+.chip {
+  display: inline-block;
+  padding: 3px 12px;
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--text);
+  opacity: 0.75;
+  cursor: pointer;
+  user-select: none;
+  list-style: none; /* pentru <summary> */
+  transition: opacity var(--ease), border-color var(--ease), box-shadow var(--ease), background var(--ease), color var(--ease);
+}
+.chip:hover { opacity: 1; border-color: var(--text); box-shadow: 0 0 8px var(--border); }
+.chip::-webkit-details-marker { display: none; }
+
+.chip.activ {
+  opacity: 1;
+  color: var(--bg);
+  background: var(--text);
+  border-color: var(--text);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+/* Meniul derulant MORE (<details>) */
+.genre-more { position: relative; }
+.genre-more[open] > summary { opacity: 1; border-color: var(--text); }
+
+.genre-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 140px;
+  padding: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6), 0 0 12px color-mix(in srgb, var(--border) 25%, transparent);
+  animation: drop-in 0.2s ease;
+}
+.genre-dropdown .chip { text-align: center; }
+
+@keyframes drop-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ------------------------------------------------------------
+   CONTAINER: player stânga, panou dreapta
+   ------------------------------------------------------------ */
 .container {
-  max-width: 1000px;
-  margin: 30px auto;
+  max-width: 1100px;
+  margin: 26px auto;
   padding: 0 16px;
   display: grid;
-  /* Etapa 3: doar panoul cu date; a doua coloană (1fr 2fr) revine în Etapa 7 */
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(280px, 340px) 1fr;
   gap: 20px;
   align-items: start;
 }
@@ -107,7 +322,7 @@ body::after {
   background: var(--card);
   border: 1px solid var(--border);
   padding: 15px;
-  box-shadow: 0 0 10px rgba(176, 38, 255, 0.15);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--border) 15%, transparent);
 }
 .panel h2 {
   margin-top: 0;
@@ -117,47 +332,543 @@ body::after {
   text-transform: uppercase;
 }
 
-/* Formular */
-.item-form { display: flex; flex-direction: column; gap: 15px; }
-.item-form label { display: flex; flex-direction: column; font-size: 0.9rem; font-weight: bold; }
-.item-form input, .item-form select {
-  background: rgba(0,0,0,0.5);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 10px;
-  font-family: inherit;
-  margin-top: 5px;
-}
-.item-form input:focus, .item-form select:focus { outline: none; box-shadow: 0 0 8px var(--border); }
-.item-form button {
-  background: var(--text);
-  color: var(--bg);
-  border: 1px solid var(--border);
-  padding: 12px;
-  font-weight: bold;
-  cursor: pointer;
-  text-transform: uppercase;
-  transition: all 0.2s;
-}
-.item-form button:hover {
-  background: var(--bg);
-  color: var(--accent-hover);
-  box-shadow: 0 0 10px var(--accent-hover);
+/* Panoul din dreapta intră lin la fiecare schimbare de tab */
+.tab-panel { animation: panel-in 0.3s ease; }
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* Listă & Carduri */
+
+/* ------------------------------------------------------------
+   PLAYER
+   ------------------------------------------------------------ */
+.player {
+  position: sticky;
+  top: 120px; /* rămâne vizibil sub meniul de sus când derulezi lista */
+  text-align: center;
+}
+
+.player-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Mini-egalizator: 5 bare */
+.eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.eq i {
+  width: 3px;
+  height: 20%;
+  background: var(--text);
+  box-shadow: 0 0 4px var(--text);
+  animation: eq-bounce 0.7s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+/* Fiecare bară pornește la alt moment, ca să nu sară toate deodată */
+.eq i:nth-child(2) { animation-delay: -0.2s; }
+.eq i:nth-child(3) { animation-delay: -0.45s; }
+.eq i:nth-child(4) { animation-delay: -0.1s; }
+.eq i:nth-child(5) { animation-delay: -0.3s; }
+.is-playing .eq i { animation-play-state: running; }
+
+@keyframes eq-bounce {
+  from { height: 20%; }
+  to { height: 100%; }
+}
+
+/* --- Discul --- */
+.vinyl-wrap {
+  position: relative;
+  width: min(100%, 250px);
+  aspect-ratio: 1;
+  margin: 18px auto 20px;
+  animation: disc-in 0.45s ease; /* la fiecare piesă nouă discul "intră" */
+}
+
+@keyframes disc-in {
+  from { opacity: 0; transform: scale(0.85) rotate(-40deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+/* Reflexia de lumină: stă pe loc deasupra discului care se rotește */
+.vinyl-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 30deg,
+    transparent 0deg,
+    rgba(255, 255, 255, 0.09) 25deg,
+    transparent 60deg,
+    transparent 180deg,
+    rgba(255, 255, 255, 0.06) 205deg,
+    transparent 240deg
+  );
+  pointer-events: none;
+}
+
+/* Stratul exterior: folosit doar de animația de rewind */
+.vinyl-rewind {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+.rewinding .vinyl-rewind {
+  /* 3 ture înapoi, rapid la început și încetinind la final */
+  animation: rewind 0.9s cubic-bezier(0.3, 0, 0.2, 1);
+}
+@keyframes rewind {
+  to { transform: rotate(-1080deg); }
+}
+
+/* Stratul interior: rotația normală */
+.vinyl {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  /* Șanțurile discului: cercuri concentrice foarte fine */
+  background: repeating-radial-gradient(
+    circle at center,
+    #0c0a10 0 2px,
+    #19131f 2px 3px
+  );
+  border: 2px solid #000;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--border) 15%, #07030a),
+    0 0 25px -6px var(--border);
+  /* --rot = durata unei rotații, calculată din BPM în Vinil.jsx */
+  animation: spin var(--rot, 2s) linear infinite;
+  animation-play-state: paused; /* oprit până se apasă PLAY */
+  transition: box-shadow 0.4s ease;
+}
+.playing .vinyl {
+  animation-play-state: running;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--border) 15%, #07030a),
+    0 0 40px -2px var(--border);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Cercul mic din mijloc, cu coperta */
+.vinyl-label {
+  position: relative;
+  width: 40%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+  background: var(--card);
+}
+.vinyl-label img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* umple cercul fără să deformeze imaginea */
+  display: block;
+}
+
+/* Gaura din centrul discului */
+.vinyl-label::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 0 0 0 1px var(--muted);
+}
+
+/* Imaginea de rezervă când piesa nu are copertă */
+.no-cover {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  align-content: start;
+  padding: 20% 16% 0; /* textul stă deasupra găurii din centru și se rupe pe 2 rânduri */
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--border) 18%, #07030a) 0 6px,
+    var(--card) 6px 12px
+  );
+  color: var(--text);
+  font-size: 0.62rem;
+  font-weight: bold;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* Brațul pick-up-ului, prins în colțul din dreapta sus.
+   --arm vine din Vinil.jsx: -10deg = ridicat, 3deg = începutul piesei,
+   24deg = finalul piesei. Tranziția face mișcarea continuă între pași. */
+.tonearm {
+  position: absolute;
+  top: -2%;
+  right: 2%;
+  z-index: 3;
+  width: 6px;
+  height: 60%;
+  border-radius: 3px;
+  background: linear-gradient(var(--muted), var(--text));
+  transform-origin: top center;
+  transform: rotate(var(--arm, -10deg));
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* Cât timp rulează, brațul se mișcă liniar, la fel ca pașii de timp */
+.playing .tonearm { transition: transform 0.3s linear; }
+/* La rewind alunecă înapoi pe aceeași durată ca discul */
+.rewinding .tonearm { transition: transform 0.9s cubic-bezier(0.3, 0, 0.2, 1); }
+
+/* Pivotul (cercul de sus) */
+.tonearm::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid var(--border);
+}
+/* Capul cu acul (jos) */
+.tonearm::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  width: 12px;
+  height: 20px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background: var(--text);
+  box-shadow: 0 0 8px var(--text);
+}
+
+/* --- Informații piesă și progres --- */
+.track-info h3 { margin: 0 0 4px; font-size: 0.95rem; }
+.meta-text { margin: 0; font-size: 0.72rem; color: var(--muted); letter-spacing: 1px; }
+.player-state { margin: 6px 0 0; font-size: 0.72rem; color: var(--accent); letter-spacing: 2px; }
+
+/* --- ♥ LIKE și + PLAYLIST --- */
+.track-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+.action-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  font-size: 0.72rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: background var(--ease), color var(--ease), box-shadow var(--ease), border-color var(--ease);
+}
+.action-btn:hover { box-shadow: 0 0 10px var(--accent-hover); }
+.action-btn.activ { background: var(--text); color: var(--bg); }
+.action-btn.liked-on {
+  border-color: #ff007f;
+  color: #ff007f;
+  text-shadow: 0 0 6px #ff007f;
+  animation: like-pop 0.35s ease;
+}
+.action-count {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* Meniul de playlisturi: se deschide deasupra butonului */
+.pl-menu { position: relative; }
+.pl-popover {
+  position: absolute;
+  bottom: calc(100% + 8px); /* se deschide în sus, peste disc, ca să nu iasă din ecran */
+  left: 50%;
+  z-index: 20;
+  width: 250px;
+  padding: 10px;
+  transform: translateX(-50%);
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 14px color-mix(in srgb, var(--border) 30%, transparent);
+  animation: pop-in 0.2s ease;
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.pl-popover-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.pl-close { font-size: 0.8rem; color: var(--muted); }
+.pl-close:hover { color: var(--text); }
+
+.pl-options { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+
+/* O opțiune = un playlist, în culorile genului lui */
+.pl-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 0.78rem;
+  text-align: left;
+  color: var(--text);
+  transition: background var(--ease);
+}
+.pl-option:hover { background: color-mix(in srgb, var(--text) 12%, transparent); }
+.pl-option.bifat { background: color-mix(in srgb, var(--text) 18%, transparent); }
+.pl-option-name { flex: 1; font-weight: bold; }
+.pl-check { width: 1em; }
+
+/* Formularul pentru playlist nou */
+.pl-new {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--muted);
+}
+.pl-new input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.5);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.72rem;
+}
+.pl-new input:focus { outline: none; box-shadow: 0 0 8px var(--border); }
+.pl-new button {
+  padding: 6px 10px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+.pl-new button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.progress {
+  position: relative;
+  height: 4px;
+  margin-top: 16px;
+  background: color-mix(in srgb, var(--border) 20%, transparent);
+  cursor: pointer;
+  transition: height var(--ease);
+}
+/* Zonă de click mai mare decât bara subțire */
+.progress::before {
+  content: "";
+  position: absolute;
+  inset: -8px 0;
+}
+.progress:hover { height: 6px; }
+
+.progress-fill {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  background: var(--text);
+  box-shadow: 0 0 8px var(--text);
+  transition: width 0.3s linear;
+}
+.progress.rewinding .progress-fill { transition: width 0.9s cubic-bezier(0.3, 0, 0.2, 1); }
+
+/* Punctul de la capătul barei */
+.progress-fill::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--accent-hover);
+  box-shadow: 0 0 8px var(--accent-hover);
+}
+
+.progress-time {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+/* --- Butoanele ⏮ ▶/❚❚ ⏭ ⟲ --- */
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.ctl {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text);
+  transition: background var(--ease), color var(--ease), box-shadow var(--ease), transform var(--ease);
+}
+.ctl:hover { box-shadow: 0 0 10px var(--accent-hover); transform: scale(1.08); }
+.ctl:active { transform: scale(0.94); }
+.ctl:disabled { opacity: 0.5; cursor: wait; }
+
+/* Butonul principal (play / pauză) e mai mare și mereu plin */
+.ctl-main {
+  width: 58px;
+  height: 58px;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.ctl-main svg { width: 26px; height: 26px; }
+/* Cât rulează, butonul pulsează ușor */
+.ctl-main.activ { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse {
+  50% { box-shadow: 0 0 24px var(--accent); }
+}
+
+/* Iconița de repeat se învârte înapoi odată cu discul */
+.ctl-repeat.activ { background: var(--text); color: var(--bg); opacity: 1; }
+.ctl-repeat.activ svg { animation: rewind-icon 0.9s cubic-bezier(0.3, 0, 0.2, 1); }
+@keyframes rewind-icon {
+  to { transform: rotate(-720deg); }
+}
+
+
+/* ------------------------------------------------------------
+   LISTĂ & CARDURI
+   ------------------------------------------------------------ */
 .item-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
 .item-card {
   display: flex; justify-content: space-between; align-items: center;
+  gap: 12px;
   border: 1px solid var(--border);
   padding: 12px 16px;
-  background: rgba(217, 66, 255, 0.05);
-  transition: background 0.2s;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  cursor: pointer;
+  transition: background var(--ease), transform var(--ease), box-shadow var(--ease), border-color var(--ease);
 }
-.item-card:hover { background: rgba(217, 66, 255, 0.15); }
+.item-card:hover,
+.item-card:focus-visible {
+  background: color-mix(in srgb, var(--text) 15%, transparent);
+  transform: translateX(4px);
+  box-shadow: -4px 0 0 var(--accent-hover), 0 0 12px color-mix(in srgb, var(--border) 25%, transparent);
+}
+.card-details { flex: 1; min-width: 0; } /* ocupă spațiul dintre mini-disc și partea dreaptă */
 .card-details h3 { margin: 0 0 5px 0; font-size: 1rem; }
 
-/* Etichete */
+/* Mini-discul din card: coperta rotundă, cu gaură în mijloc */
+.mini-disc {
+  position: relative;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  background: repeating-radial-gradient(circle at center, #0c0a10 0 2px, #19131f 2px 3px);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--border) 40%, transparent);
+}
+.mini-disc img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mini-disc::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bg);
+}
+/* Eticheta colorată pentru piesele fără copertă */
+.mini-label {
+  width: 45%;
+  height: 45%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--border));
+  box-shadow: 0 0 6px var(--border);
+}
+/* Se învârte cât timp piesa lui rulează */
+.mini-disc.spinning { animation: spin 1.8s linear infinite; }
+
+.card-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.card-side { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+
+/* Eticheta de gen: culorile vin din data-gen pus pe ea */
+.gen-tag {
+  font-size: 0.68rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: var(--text);
+  text-shadow: 0 0 4px color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+/* Butonul ♥ din card */
+.like-btn {
+  font-size: 1.15rem;
+  line-height: 1;
+  color: var(--muted);
+  transition: color var(--ease), transform var(--ease), text-shadow var(--ease);
+}
+.like-btn:hover { color: #ff007f; transform: scale(1.2); }
+.like-btn.on {
+  color: #ff007f;
+  text-shadow: 0 0 8px #ff007f;
+  animation: like-pop 0.35s ease;
+}
+@keyframes like-pop {
+  40% { transform: scale(1.4); }
+}
+
+/* Piesa de pe disc: chenar luminos + eticheta ON_DECK */
+.item-card.on-deck {
+  border-color: var(--accent-hover);
+  box-shadow: inset 4px 0 0 var(--accent-hover), 0 0 14px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.on-deck-tag {
+  font-size: 0.68rem;
+  font-weight: bold;
+  color: var(--accent-hover);
+  letter-spacing: 1px;
+}
+.is-playing .on-deck-tag { animation: blink 1s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0.3; } }
+
+/* Etichete de format */
 .badge {
   font-size: 0.7rem; padding: 3px 8px; border: 1px solid currentColor; border-radius: 4px; font-weight: bold;
 }
@@ -168,9 +879,9 @@ body::after {
 /* Finalizat */
 .item-card.done h3 { text-decoration: line-through; color: var(--muted); }
 .item-card.done .status { color: var(--muted); }
-.item-card.done { border-color: var(--muted); }
+.item-card.done:not(.on-deck) { border-color: var(--muted); }
 
-/* Mesajul pentru coada goală (Etapa 4) */
+/* Mesajul pentru o listă goală */
 .empty {
   margin: 0;
   padding: 20px;
@@ -179,7 +890,131 @@ body::after {
   border: 1px dashed var(--muted);
 }
 
-/* Subsol */
+
+/* ------------------------------------------------------------
+   PLAYLISTURI (fiecare în culorile genului său)
+   ------------------------------------------------------------ */
+.playlist-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* câte încap pe rând */
+  gap: 14px;
+}
+.playlist-card {
+  border: 1px solid var(--border);
+  background: var(--card);
+  transition: transform var(--ease), box-shadow var(--ease);
+}
+.playlist-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.playlist-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 10px;
+  text-align: left;
+}
+.playlist-name { margin-top: 8px; font-size: 0.85rem; font-weight: bold; color: var(--text); }
+
+/* Coperta: gradient din culorile genului + grilă fină */
+.playlist-cover {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  align-items: end;
+  padding: 10px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px) 0 0 / 100% 12px,
+    linear-gradient(135deg, var(--border), var(--accent) 45%, var(--bg) 90%);
+}
+.playlist-initiale {
+  font-size: 2rem;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 10px var(--border);
+}
+
+/* Primele piese din playlist */
+.playlist-btn { min-width: 0; }
+.playlist-tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--muted);
+}
+.pl-track {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis; /* titlurile lungi se termină în "..." */
+  font-size: 0.64rem;
+  color: var(--muted);
+  animation: panel-in 0.3s ease; /* o piesă nou adăugată apare lin */
+}
+.pl-track.curent { color: var(--accent-hover); }
+.pl-track.more { font-style: italic; }
+
+/* Butonul ▶ apare pe copertă la hover */
+.playlist-play {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.9rem;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity var(--ease), transform var(--ease);
+}
+.playlist-card:hover .playlist-play,
+.playlist-btn:focus-visible .playlist-play {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+
+/* ------------------------------------------------------------
+   NOTIFICAREA (toast): apare, stă, dispare singură
+   ------------------------------------------------------------ */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 76px; /* deasupra vizualizatorului */
+  z-index: 200;
+  padding: 8px 16px;
+  transform: translateX(-50%);
+  background: var(--card);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 40%, transparent);
+  animation: toast 2.2s ease forwards;
+}
+@keyframes toast {
+  0% { opacity: 0; transform: translate(-50%, 12px); }
+  10%, 85% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 6px); }
+}
+
+
+/* ------------------------------------------------------------
+   SUBSOL & VIZUALIZATOR
+   ------------------------------------------------------------ */
 .app-footer { text-align: center; font-size: 0.8rem; padding: 10px; color: var(--muted); }
 
 /* Vizualizatorul Fixat Jos */
@@ -191,7 +1026,7 @@ body::after {
   height: 60px;
   background-color: var(--bg);
   border-top: 1px solid var(--border);
-  box-shadow: 0 -2px 15px rgba(176, 38, 255, 0.2);
+  box-shadow: 0 -2px 15px color-mix(in srgb, var(--border) 20%, transparent);
   z-index: 100;
   overflow: hidden;
   background-image:
@@ -200,7 +1035,7 @@ body::after {
   background-size: 10px 10px;
 }
 
-/* Animație CSS pentru efectul de undă */
+/* Animație CSS pentru efectul de undă (stinsă când nu rulează nimic) */
 .wave {
   position: absolute;
   top: 50%;
@@ -217,16 +1052,42 @@ body::after {
   box-shadow: 0 0 10px var(--text);
   transform: translateY(-50%);
   animation: move-wave 1.5s linear infinite;
-  opacity: 0.8;
+  opacity: 0.4;
+  transition: opacity 0.4s ease;
 }
+.is-playing .wave { opacity: 1; }
 
 @keyframes move-wave {
   0% { transform: translateY(-50%) translateX(0); }
   100% { transform: translateY(-50%) translateX(-40px); }
 }
 
-/* Ecrane înguste */
-@media (max-width: 700px) { .container { grid-template-columns: 1fr; } }
+
+/* ------------------------------------------------------------
+   ECRANE ÎNGUSTE
+   ------------------------------------------------------------ */
+@media (max-width: 900px) {
+  .container { grid-template-columns: 1fr; }
+  .player { position: static; } /* pe mobil player-ul nu mai stă lipit */
+}
+
+@media (max-width: 700px) {
+  .top-nav { position: static; } /* pe telefon meniul nu mai ocupă ecranul la scroll */
+  .tab { padding: 6px 10px; font-size: 0.75rem; }
+  .item-card { flex-direction: column; align-items: flex-start; }
+  .card-side { flex-direction: row; align-items: center; gap: 10px; }
+  .mini-disc { display: none; } /* pe telefon nu e loc lângă titlu */
+}
+
+/* Dacă sistemul cere "mai puțină mișcare" (ex.: Windows cu efectele de animație
+   oprite), scoatem animațiile decorative. Discurile se învârt în continuare,
+   pentru că pornesc doar când utilizatorul apasă PLAY. */
+@media (prefers-reduced-motion: reduce) {
+  .ascii-spider, .wave, .eq i, .tab-panel, .vinyl-wrap, .genre-dropdown,
+  .ctl-main.activ, .on-deck-tag, .pl-track, .pl-popover, .like-btn.on, .action-btn.liked-on {
+    animation: none !important;
+  }
+}
 
 /* Focus */
 :focus-visible { outline: 2px solid var(--border); outline-offset: 2px; }
