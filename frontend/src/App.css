@@ -1,7 +1,7 @@
 /* ============================================================
    CYBERWAVE // App.css
    Stilurile din Etapa 1, copiate integral din mockup.
-   Singura diferență: .container are o singură coloană (vezi mai jos).
+   Diferențe: .container are o singură coloană și s-a adăugat .empty (Etapa 4).
    ============================================================ */
 
 * {
@@ -169,6 +169,15 @@ body::after {
 .item-card.done h3 { text-decoration: line-through; color: var(--muted); }
 .item-card.done .status { color: var(--muted); }
 .item-card.done { border-color: var(--muted); }
+
+/* Mesajul pentru coada goală (Etapa 4) */
+.empty {
+  margin: 0;
+  padding: 20px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--muted);
+}
 
 /* Subsol */
 .app-footer { text-align: center; font-size: 0.8rem; padding: 10px; color: var(--muted); }

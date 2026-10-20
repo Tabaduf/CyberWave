@@ -1,9 +1,11 @@
 /* ============================================================
    CYBERWAVE // App.jsx
-   Etapa 3: componenta principală a aplicației React.
-   Datele din Etapa 2 stau aici; antetul afișează valori calculate,
-   iar lista apare temporar ca text brut (JSON).
+   Componenta principală a aplicației.
+   Ține datele, afișează antetul cu valori calculate și
+   trimite lista de piese către PiesaList (Etapa 4).
    ============================================================ */
+
+import PiesaList from "./components/PiesaList.jsx";
 
 
 /* ------------------------------------------------------------
@@ -12,7 +14,7 @@
    lui App se recreează la fiecare actualizare a ecranului.
    ------------------------------------------------------------ */
 const piese = [
-  { id: 1, titlu: "MASTER_BOOT_RECORD - CHKDSK", redata: false, format: "flac" },
+  { id: 1, titlu: "MASTER_BOOT_RECORD - CHKDSK", redata: true, format: "flac" },
   { id: 2, titlu: "PERTURBATOR - FUTURE_CLUB", redata: true, format: "mp3" },
   { id: 3, titlu: "KEYGEN_CHURCH - TENEBRE", redata: false, format: "synth" },
 ];
@@ -21,32 +23,6 @@ const piese = [
    String.raw și backtick-urile păstrează exact spațiile și rândurile,
    pe care JSX altfel le-ar comprima. */
 const PAIANJEN = String.raw`
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
             ;               ,
           ,;                 '.
          ;:                    :;
@@ -109,8 +85,9 @@ export default function App() {
       <main className="container">
         <section className="panel">
           <h2>&gt;&gt; AUDIO_QUEUE</h2>
-          {/* Temporar: date brute; cardurile apar în Etapa 4 */}
-          <pre>{JSON.stringify(piese, null, 2)}</pre>
+          {/* Trimitem tot array-ul prin props-ul "piese";
+              PiesaList desenează câte un card pentru fiecare piesă */}
+          <PiesaList piese={piese} />
         </section>
       </main>
 
