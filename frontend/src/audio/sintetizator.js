@@ -219,3 +219,78 @@ export function seteazaVolum(v) {
   volum = v;
   if (master) master.gain.setTargetAtTime(volumInGain(v), ctx.currentTime, 0.03);
 }
+
+/* Sunetul de scratch: o "zgârietură" scurtă de zgomot filtrat.
+   viteza = cât de repede e tras discul (pozitiv = înainte, negativ = înapoi).
+   Cu cât tragi mai repede, cu atât sunetul e mai ascuțit și mai tare. */
+export function scratch(viteza) {
+  initializeaza();
+  ctx.resume();
+  const t = ctx.currentTime;
+  const tarie = Math.min(1, Math.abs(viteza) / 12);
+
+  const sursa = ctx.createBufferSource();
+  const filtru = ctx.createBiquadFilter();
+  const g = ctx.createGain();
+  sursa.buffer = zgomot;
+  sursa.playbackRate.value = viteza > 0 ? 1.2 : 0.8; // înapoi sună mai "gros"
+  filtru.type = "bandpass";
+  filtru.Q.value = 6;
+  filtru.frequency.setValueAtTime(300 + tarie * 2500, t);
+  filtru.frequency.exponentialRampToValueAtTime(200 + tarie * 800, t + 0.07);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.05 + tarie * 0.5, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+
+  sursa.connect(filtru).connect(g).connect(master);
+  sursa.start(t, Math.random() * 0.5); // pornim din alt punct al zgomotului, ca să nu sune identic
+  sursa.stop(t + 0.1);
+}
+
+/* Sunetul de disc spart: o bubuitură joasă, un "crash" de zgomot
+   și câteva cioburi scurte și ascuțite care sună la momente diferite. */
+export function sparge() {
+  initializeaza();
+  ctx.resume();
+  const t = ctx.currentTime;
+
+  // Bubuitura: un sinus care coboară
+  const bum = ctx.createOscillator();
+  const gBum = ctx.createGain();
+  bum.frequency.setValueAtTime(110, t);
+  bum.frequency.exponentialRampToValueAtTime(35, t + 0.25);
+  gBum.gain.setValueAtTime(0.9, t);
+  gBum.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+  bum.connect(gBum).connect(master);
+  bum.start(t);
+  bum.stop(t + 0.32);
+
+  // Crash-ul: zgomot cu filtru care coboară, ca sticla / plasticul care se rupe
+  const sursa = ctx.createBufferSource();
+  const filtru = ctx.createBiquadFilter();
+  const g = ctx.createGain();
+  sursa.buffer = zgomot;
+  filtru.type = "highpass";
+  filtru.frequency.setValueAtTime(5000, t);
+  filtru.frequency.exponentialRampToValueAtTime(700, t + 0.5);
+  g.gain.setValueAtTime(0.7, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+  sursa.connect(filtru).connect(g).connect(master);
+  sursa.start(t);
+  sursa.stop(t + 0.65);
+
+  // Cioburile: 7 "clinchete" scurte, la frecvențe și momente aleatoare
+  for (let i = 0; i < 7; i++) {
+    const tc = t + 0.03 + Math.random() * 0.35;
+    const osc = ctx.createOscillator();
+    const gc = ctx.createGain();
+    osc.type = "triangle";
+    osc.frequency.value = 2000 + Math.random() * 4000;
+    gc.gain.setValueAtTime(0.0001, tc);
+    gc.gain.exponentialRampToValueAtTime(0.12, tc + 0.005);
+    gc.gain.exponentialRampToValueAtTime(0.0001, tc + 0.08);
+    osc.connect(gc).connect(master);
+    osc.start(tc);
+    osc.stop(tc + 0.1);
+  }
+}

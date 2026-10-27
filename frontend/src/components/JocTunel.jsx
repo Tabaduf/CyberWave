@@ -120,19 +120,22 @@ const mod = (a, n) => ((a % n) + n) % n;
 /* ------------------------------------------------------------
    COMPONENTA
    ------------------------------------------------------------ */
-export default function JocTunel({ piesa, ruleaza, onIesire }) {
+export default function JocTunel({ piesa, ruleaza, onIesire, onEveniment }) {
   const canvasRef = useRef(null);
   const radacinaRef = useRef(null);
 
   // Ce știe jocul despre muzică; actualizat din props, citit în bucla de joc
   const muzicaRef = useRef({ bpm: 120, ruleaza: false });
   const iesireRef = useRef(onIesire);
+  // Evenimentele jocului (laser, bloc spart, lovire) urcă spre statistici
+  const evenimentRef = useRef(onEveniment);
   // Funcția de tragere trăiește în bucla de joc; butonul FIRE o apelează prin ref
   const tragereRef = useRef(null);
 
   useEffect(() => {
     muzicaRef.current = { bpm: piesa ? piesa.bpm : 120, ruleaza };
     iesireRef.current = onIesire;
+    evenimentRef.current = onEveniment;
   });
 
   /* Bucla de joc: pornește o singură dată ([] la final) și se oprește
@@ -227,6 +230,7 @@ export default function JocTunel({ piesa, ruleaza, onIesire }) {
         return;
       }
       joc.munitie--;
+      evenimentRef.current?.("laser");
       joc.lasere.push({
         unghi: joc.unghi,
         banda: Math.floor(mod(joc.unghi, Math.PI * 2) / LATIME_BANDA),
@@ -237,6 +241,7 @@ export default function JocTunel({ piesa, ruleaza, onIesire }) {
 
     /* --- Explozie: blocul se sparge în bucăți care zboară în toate părțile --- */
     function explozie(o) {
+      evenimentRef.current?.("bloc");
       for (let i = 0; i < 28; i++) {
         joc.particule.push({
           unghi: (o.banda + Math.random()) * LATIME_BANDA,          // undeva pe lățimea blocului
@@ -254,6 +259,7 @@ export default function JocTunel({ piesa, ruleaza, onIesire }) {
     /* --- Lovire: scorul se pierde, cursa continuă --- */
     function lovire() {
       const scor = Math.floor(joc.distanta);
+      evenimentRef.current?.("lovire", scor);
       if (scor > joc.record) {
         joc.record = scor;
         try {

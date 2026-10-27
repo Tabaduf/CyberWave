@@ -15,6 +15,8 @@ export default function Player({
   ruleaza,
   timp,
   rewind,
+  scratching,
+  discRidicat,
   liked,
   playlisturi,
   onPlayPause,
@@ -25,6 +27,12 @@ export default function Player({
   onLike,
   onComutaPlaylist,
   onCreeazaPlaylist,
+  onScratchStart,
+  onScratch,
+  onScratchEnd,
+  onRidica,
+  onRevenire,
+  onSpart,
 }) {
   // Return timpuriu: nicio piesă de redat
   if (!piesa) {
@@ -43,6 +51,8 @@ export default function Player({
   let stare = "❚❚ PAUSED";
   if (ruleaza) stare = "▶ PLAYING";
   if (rewind) stare = "⟲ REWINDING...";
+  if (scratching) stare = "◎ SCRATCHING";
+  if (discRidicat) stare = "⏏ DISC LIFTED";
 
   return (
     <section className="panel player">
@@ -56,7 +66,20 @@ export default function Player({
 
       {/* key={piesa.id}: la altă piesă, React creează un disc nou,
           deci rulează din nou animația de "schimbare a discului" */}
-      <Vinil key={piesa.id} piesa={piesa} ruleaza={ruleaza} rewind={rewind} progres={progres} />
+      <Vinil
+        key={piesa.id}
+        piesa={piesa}
+        ruleaza={ruleaza}
+        rewind={rewind}
+        progres={progres}
+        scratching={scratching}
+        onScratchStart={onScratchStart}
+        onScratch={onScratch}
+        onScratchEnd={onScratchEnd}
+        onRidica={onRidica}
+        onRevenire={onRevenire}
+        onSpart={onSpart}
+      />
 
       <div className="track-info">
         <h3>{piesa.titlu}</h3>

@@ -1048,6 +1048,215 @@ button {
 
 
 /* ------------------------------------------------------------
+   MOD DJ: discul se prinde cu mâna
+   ------------------------------------------------------------ */
+.vinyl-rewind {
+  cursor: grab;
+  touch-action: none; /* pe telefon, tragerea învârte discul în loc să derulez pagina */
+  user-select: none;
+}
+.scratching .vinyl-rewind { cursor: grabbing; }
+.tonearm { pointer-events: none; } /* brațul nu "fură" click-urile de pe disc */
+
+/* Cât timp mâna e pe disc, rotația automată se oprește,
+   iar discul "ținut" strălucește mai tare */
+.scratching .vinyl {
+  animation-play-state: paused;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--border) 15%, #07030a),
+    0 0 50px 0 var(--accent-hover);
+}
+
+/* Indiciul de sub disc: discret, mai vizibil la hover și în timpul scratch-ului */
+.dj-hint {
+  position: absolute;
+  left: 50%;
+  bottom: -18px;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
+  letter-spacing: 2px;
+  white-space: nowrap;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity var(--ease);
+  pointer-events: none;
+}
+.vinyl-wrap:hover .dj-hint { opacity: 0.8; }
+.scratching .dj-hint { opacity: 1; color: var(--accent-hover); }
+
+
+/* ------------------------------------------------------------
+   DISCUL RIDICAT, ARUNCAT ȘI SPART
+   ------------------------------------------------------------ */
+
+/* Platanul: se vede doar când discul e luat de pe el */
+.vinyl-wrap {
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #3a3340 0 4px,                 /* axul din mijloc */
+    #0c0a10 5px 44%,
+    color-mix(in srgb, var(--border) 25%, #0c0a10) 45% 47%,  /* un inel colorat */
+    #0c0a10 48% 49.5%,
+    transparent 50%
+  );
+}
+.vinyl-rewind.gol { opacity: 0; } /* discul e în mână: platanul rămâne gol */
+.vinyl-rewind.intors { animation: disc-in 0.4s ease; } /* discul revine pe platan */
+
+/* Discul din mână / din zbor (desenat în <body>, peste tot) */
+.disc-zbor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 500;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: drop-shadow(0 22px 26px rgba(0, 0, 0, 0.6));
+  will-change: transform; /* browserul îl pregătește pentru mișcare lină */
+}
+.disc-zbor .vinyl {
+  animation: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--border) 15%, #07030a), 0 0 30px var(--border);
+}
+/* Ridicat: crește puțin, ca și cum ar fi mai aproape de tine */
+.disc-zbor.ridicat { scale: 1.08; transition: scale 0.15s ease; }
+/* Lăsat jos: dispare repede */
+.disc-zbor.fade { animation: disc-fade 0.35s ease forwards; }
+@keyframes disc-fade {
+  to { opacity: 0; scale: 0.7; }
+}
+
+/* Cioburile: fiecare e o "felie" din disc (clip-path) care zboară în direcția ei */
+.cioburi {
+  position: fixed;
+  z-index: 500;
+  pointer-events: none;
+}
+.ciob {
+  position: absolute;
+  inset: 0;
+  transform: rotate(var(--start));
+  animation: ciob 0.7s cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+}
+.ciob .vinyl { animation: none; }
+@keyframes ciob {
+  to {
+    transform: translate(var(--dx), var(--dy)) rotate(calc(var(--start) + var(--rot)));
+    opacity: 0;
+  }
+}
+/* Fulgerul de la impact */
+.ciob-flash {
+  position: absolute;
+  inset: -40%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-hover), transparent 60%);
+  animation: ciob-flash 0.4s ease-out forwards;
+}
+@keyframes ciob-flash {
+  from { opacity: 1; transform: scale(0.4); }
+  to { opacity: 0; transform: scale(1.5); }
+}
+
+
+/* ------------------------------------------------------------
+   SYS_LOG: statisticile, ca un raport de terminal
+   ------------------------------------------------------------ */
+.syslog {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); /* două coloane când e loc */
+  gap: 14px;
+}
+.syslog-block {
+  padding: 10px 12px;
+  border: 1px dashed color-mix(in srgb, var(--border) 60%, transparent);
+  background: color-mix(in srgb, var(--bg) 40%, transparent);
+  font-size: 0.78rem;
+}
+.syslog-wide { grid-column: 1 / -1; } /* jurnalul ocupă toată lățimea */
+
+/* Linia de comandă de deasupra fiecărui bloc */
+.syslog-cmd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-weight: bold;
+}
+.syslog-empty { margin: 0; color: var(--muted); font-style: italic; }
+.syslog-accent { color: var(--accent-hover); font-weight: bold; }
+
+/* Perechi CHEIE ........ valoare */
+.syslog-info {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 0;
+}
+.syslog-info dt { color: var(--muted); }
+.syslog-info dd { margin: 0; text-align: right; }
+
+/* Barele de gen: nume | ████░░░ | % ; culorile vin din data-gen */
+.syslog-bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.syslog-bars li {
+  display: grid;
+  grid-template-columns: 7.5em 1fr 3em;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+.bar-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.7rem; }
+.bar-ascii { letter-spacing: -1px; white-space: nowrap; overflow: hidden; text-shadow: 0 0 6px var(--border); }
+.bar-rest { color: var(--muted); opacity: 0.4; text-shadow: none; }
+.bar-pct { text-align: right; color: var(--muted); }
+
+/* Topul pieselor */
+.syslog-top { margin: 0; padding-left: 1.6em; display: flex; flex-direction: column; gap: 3px; }
+.syslog-top li { display: flex; justify-content: space-between; gap: 10px; }
+.top-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.top-time { color: var(--muted); flex-shrink: 0; }
+
+/* Jurnalul */
+.syslog-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  font-size: 0.74rem;
+  line-height: 1.6;
+}
+.syslog-lines li {
+  display: grid;
+  grid-template-columns: auto 6.5em 1fr;
+  gap: 10px;
+  animation: panel-in 0.25s ease; /* rândurile noi apar lin */
+}
+.log-ora { color: var(--muted); }
+.log-tip { font-weight: bold; color: var(--accent); }
+.log-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* Câteva tipuri au culori proprii */
+.log-crash .log-tip, .log-delete .log-tip, .log-shatter .log-tip { color: var(--danger); }
+.log-like .log-tip, .log-blast .log-tip { color: var(--accent-hover); }
+.log-sys .log-tip { color: var(--text); }
+
+.syslog-lines .log-cursor { display: block; color: var(--accent); }
+.cursor { animation: blink 1s steps(2) infinite; }
+
+/* Butonul $ clear */
+.syslog-clear {
+  padding: 2px 8px;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+.syslog-clear:hover { background: var(--danger); color: var(--bg); }
+
+
+/* ------------------------------------------------------------
    NOTIFICAREA (toast): apare, stă, dispare singură
    ------------------------------------------------------------ */
 .toast {

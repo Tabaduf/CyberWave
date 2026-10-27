@@ -7,7 +7,8 @@
    un buton din antet comută tema luminoasă / întunecată.
    Extra: muzica e generată în browser (audio/sintetizator.js),
    bara de jos controlează piesa și volumul, iar PLAY GAME
-   deschide jocul Tunnel Runner peste pagină.
+   deschide jocul Tunnel Runner peste pagină. Discul se poate
+   "scratch-ui" ca la DJ, iar tabul SYS_LOG arată statisticile.
    ============================================================ */
 
 import { useState, useEffect } from "react";
@@ -17,6 +18,8 @@ import Genuri from "./components/Genuri.jsx";
 import PlaylistGrid from "./components/PlaylistGrid.jsx";
 import PlayerBar from "./components/PlayerBar.jsx";
 import JocTunel from "./components/JocTunel.jsx";
+import StatisticiLog from "./components/StatisticiLog.jsx";
+import useStatistici from "./hooks/useStatistici.js";
 import { porneste, opreste, seteazaVolum } from "./audio/sintetizator.js";
 
 
@@ -58,6 +61,7 @@ const TABURI = [
   { id: "liked", text: "♥ LIKED_SONGS" },
   { id: "random", text: "⤨ RANDOM" },
   { id: "playlists", text: "▤ PLAYLISTS" },
+  { id: "syslog", text: "▣ SYS_LOG" },
 ];
 
 /* Cât avansează timpul simulat la fiecare pas (secunde) */
@@ -128,6 +132,11 @@ export default function App() {
   const [ruleaza, setRuleaza] = useState(false);    // PLAY sau PAUSE
   const [timp, setTimp] = useState(0);              // secunde derulate
   const [rewind, setRewind] = useState(false);      // animația REPEAT e în curs
+  const [scratching, setScratching] = useState(false); // mâna e pe disc (mod DJ)
+  const [discRidicat, setDiscRidicat] = useState(false); // discul e luat de pe platan
+
+  // Statisticile și jurnalul, din hook-ul nostru (hooks/useStatistici.js)
+  const stats = useStatistici();
 
   // Id-urile pieselor apreciate (pornim de la câmpul liked din date)
   const [likedIds, setLikedIds] = useState(
@@ -161,6 +170,8 @@ export default function App() {
 
   // Bifat <-> nebifat: listă nouă, obiect nou doar pentru piesa schimbată
   function handleToggleRedata(id) {
+    const piesa = toatePiesele.find((p) => p.id === id);
+    stats.logheaza("MARK", `${piesa.redata ? "PENDING" : "PLAYED"} ${piesa.titlu}`);
     setPiese((prev) => prev.map((p) => (p.id === id ? { ...p, redata: !p.redata } : p)));
     setSugestii((prev) => prev.map((p) => (p.id === id ? { ...p, redata: !p.redata } : p)));
   }
@@ -186,6 +197,7 @@ export default function App() {
       setTimp(0);
     }
     arataMesaj(`DELETED ${piesa.titlu}`);
+    stats.logheaza("DELETE", piesa.titlu);
   }
 
   // Marchează piesa ca redată (la finalul ei), fără să o comute înapoi
@@ -202,6 +214,7 @@ export default function App() {
     const noua = tema === "dark" ? "light" : "dark";
     setTema(noua);
     document.documentElement.dataset.theme = noua;
+    stats.logheaza("THEME", `${noua.toUpperCase()}_MODE`);
   }
 
   /* --- ACȚIUNI PLAYER --- */
@@ -213,6 +226,7 @@ export default function App() {
     setCurentId(piesa.id);
     setTimp(0);
     setRuleaza(true);
+    stats.adaugaPornire(piesa);
   }
 
   // Click pe un playlist: transformăm id-urile în piese și pornim prima
@@ -228,7 +242,8 @@ export default function App() {
   // Trece la piesa următoare (+1) sau anterioară (-1).
   // Păstrăm doar id-urile care încă există (unele pot fi șterse între timp).
   // % (restul împărțirii) face lista circulară: după ultima vine prima.
-  function treciLa(directie) {
+  // dinButon = true când utilizatorul a apăsat ⏮ / ⏭ (contează ca SKIP).
+  function treciLa(directie, dinButon = false) {
     const lista = coadaIds.filter((id) => toatePiesele.some((p) => p.id === id));
     if (lista.length === 0) {
       setRuleaza(false);
@@ -238,17 +253,21 @@ export default function App() {
     const nou = (index + directie + lista.length) % lista.length;
     setCurentId(lista[nou]);
     setTimp(0);
+
+    if (dinButon && piesaCurenta) stats.adaugaSkip(piesaCurenta, directie);
+    stats.adaugaPornire(toatePiesele.find((p) => p.id === lista[nou]));
   }
 
   // Înapoi: dacă piesa a trecut de 3 secunde, o ia de la capăt;
   // altfel sare la piesa anterioară (ca la playerele reale).
   function handleInapoi() {
     if (timp > 3) setTimp(0);
-    else treciLa(-1);
+    else treciLa(-1, true);
   }
 
   // REPEAT: discul se învârte rapid înapoi, apoi piesa pornește de la 0
   function handleRepeat() {
+    if (piesaCurenta) stats.logheaza("REPEAT", piesaCurenta.titlu);
     setRewind(true);
     setTimp(0); // brațul și bara de progres alunecă înapoi la început (tranziție CSS)
     setTimeout(() => {
@@ -271,6 +290,7 @@ export default function App() {
       eraApreciata ? prev.filter((id) => id !== piesa.id) : [...prev, piesa.id]
     );
     arataMesaj(eraApreciata ? "♡ REMOVED FROM LIKED_SONGS" : "♥ ADDED TO LIKED_SONGS");
+    stats.logheaza(eraApreciata ? "UNLIKE" : "LIKE", piesa.titlu);
   }
 
   // Adaugă piesa în playlist sau o scoate, dacă era deja acolo
@@ -288,6 +308,7 @@ export default function App() {
       })
     );
     arataMesaj(exista ? `REMOVED FROM ${playlist.nume}` : `ADDED TO ${playlist.nume}`);
+    stats.logheaza("PLAYLIST", `${exista ? "-" : "+"} ${playlist.nume}`);
   }
 
   // Playlist nou, care pornește cu piesa curentă.
@@ -304,7 +325,56 @@ export default function App() {
     const id = playlisturi.reduce((max, pl) => Math.max(max, pl.id), 0) + 1;
     setPlaylisturi((prev) => [...prev, { id, nume, gen: piesa.gen, pieseIds: [piesa.id] }]);
     arataMesaj(`CREATED ${nume}`);
+    stats.logheaza("PLAYLIST", `NEW ${nume}`);
     return true;
+  }
+
+  // Play / pauză, cu rând în jurnal
+  function handlePlayPause() {
+    if (piesaCurenta) stats.logheaza(ruleaza ? "PAUSE" : "PLAY", piesaCurenta.titlu);
+    setRuleaza((prev) => !prev);
+  }
+
+  /* --- MOD DJ (scratch pe vinil) ---
+     Cât timp mâna e pe disc, ceasul piesei și sintetizatorul stau pe loc;
+     rotirea discului mută timpul înainte sau înapoi. */
+  function handleScratchStart() {
+    setScratching(true);
+  }
+
+  function handleScratch(secunde) {
+    // Timpul rămâne între începutul și (aproape de) finalul piesei
+    setTimp((prev) => Math.min(Math.max(prev + secunde, 0), piesaCurenta.durata - 0.5));
+  }
+
+  function handleScratchEnd(totalSecunde) {
+    setScratching(false);
+    if (Math.abs(totalSecunde) > 0.2) stats.adaugaScratch(totalSecunde);
+  }
+
+  /* --- Discul ridicat de pe platan ---
+     Cât e în mână, muzica stă. Lăsat jos -> revine și piesa continuă.
+     Spart de un perete -> trecem la piesa următoare (contează ca SKIP). */
+  function handleRidica() {
+    setDiscRidicat(true);
+    if (piesaCurenta) stats.logheaza("LIFT", piesaCurenta.titlu);
+  }
+
+  function handleRevenire() {
+    setDiscRidicat(false);
+    stats.logheaza("DROP", "DISC RETURNED TO PLATTER");
+  }
+
+  function handleSpart() {
+    if (piesaCurenta) stats.logheaza("SHATTER", piesaCurenta.titlu);
+    setDiscRidicat(false);
+    treciLa(1, true);
+  }
+
+  // Jocul: pornire / ieșire, ambele notate în jurnal
+  function handleJoc() {
+    stats.evenimentJoc(inJoc ? "iesire" : "start");
+    setInJoc((prev) => !prev);
   }
 
   /* --- CEASUL PIESEI ---
@@ -314,10 +384,12 @@ export default function App() {
      următorul pas. La final, piesa e marcată PLAYED și pornește următoarea.
      Funcția din return anulează pasul programat (ex.: s-a dat PAUSE). */
   useEffect(() => {
-    if (!ruleaza || rewind || !piesaCurenta) return;
+    if (!ruleaza || rewind || scratching || discRidicat || !piesaCurenta) return;
 
     const pas = setTimeout(() => {
+      stats.adaugaAscultare(piesaCurenta, PAS); // statistici: încă 0.25 s ascultate
       if (timp + PAS >= piesaCurenta.durata) {
+        stats.logheaza("END", piesaCurenta.titlu);
         marcheazaRedata(piesaCurenta.id);
         treciLa(1);
       } else {
@@ -333,9 +405,9 @@ export default function App() {
      când se schimbă piesa / PLAY / PAUSE, pornim sau oprim sintetizatorul.
      Dacă aceeași piesă cântă deja, porneste() nu face nimic. */
   useEffect(() => {
-    if (ruleaza && !rewind && piesaCurenta) porneste(piesaCurenta);
+    if (ruleaza && !rewind && !scratching && !discRidicat && piesaCurenta) porneste(piesaCurenta);
     else opreste();
-  }, [ruleaza, rewind, piesaCurenta]);
+  }, [ruleaza, rewind, scratching, discRidicat, piesaCurenta]);
 
   // Volumul: la fiecare mișcare a slider-ului sau apăsare pe difuzor
   useEffect(() => {
@@ -377,9 +449,9 @@ export default function App() {
     timp,
     rewind,
     liked: likedIds.includes(curentId),
-    onPlayPause: () => setRuleaza((prev) => !prev),
+    onPlayPause: handlePlayPause,
     onInapoi: handleInapoi,
-    onInainte: () => treciLa(1),
+    onInainte: () => treciLa(1, true),
     onRepeat: handleRepeat,
     onDerulare: setTimp,
     onLike: () => handleLike(piesaCurenta),
@@ -440,6 +512,14 @@ export default function App() {
         {/* Stânga: discul și comenzile ({...comenziPlayer} = aceleași props ca bara de jos) */}
         <Player
           {...comenziPlayer}
+          scratching={scratching}
+          discRidicat={discRidicat}
+          onScratchStart={handleScratchStart}
+          onScratch={handleScratch}
+          onScratchEnd={handleScratchEnd}
+          onRidica={handleRidica}
+          onRevenire={handleRevenire}
+          onSpart={handleSpart}
           playlisturi={playlisturi}
           onComutaPlaylist={(playlistId) => handleComutaPlaylist(playlistId, curentId)}
           onCreeazaPlaylist={(nume) => handleCreeazaPlaylist(nume, piesaCurenta)}
@@ -482,6 +562,18 @@ export default function App() {
             </>
           )}
 
+          {tab === "syslog" && (
+            <>
+              <h2>&gt;&gt; SYS_LOG</h2>
+              <StatisticiLog
+                statistici={stats.statistici}
+                likes={likedIds.length}
+                nrPlaylisturi={playlisturi.length}
+                onReseteaza={stats.reseteaza}
+              />
+            </>
+          )}
+
           {tab === "playlists" && (
             <>
               <h2>&gt;&gt; PLAYLISTS</h2>
@@ -509,7 +601,14 @@ export default function App() {
 
       {/* Jocul: randare condiționată. Stă PESTE pagină, deci App și
           muzica rămân pornite dedesubt; la ieșire totul e cum l-ai lăsat. */}
-      {inJoc && <JocTunel piesa={piesaCurenta} ruleaza={ruleaza} onIesire={() => setInJoc(false)} />}
+      {inJoc && (
+        <JocTunel
+          piesa={piesaCurenta}
+          ruleaza={ruleaza}
+          onIesire={handleJoc}
+          onEveniment={stats.evenimentJoc}
+        />
+      )}
 
       {/* Bara de jos, în stil Spotify (înlocuiește vizualizatorul din Etapa 1) */}
       <PlayerBar
@@ -519,7 +618,7 @@ export default function App() {
         inJoc={inJoc}
         onVolum={handleVolum}
         onMut={() => setMut((prev) => !prev)}
-        onJoc={() => setInJoc((prev) => !prev)}
+        onJoc={handleJoc}
       />
     </div>
   );
