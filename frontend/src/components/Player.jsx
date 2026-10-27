@@ -8,31 +8,7 @@
 
 import Vinil from "./Vinil.jsx";
 import MeniuPlaylist from "./MeniuPlaylist.jsx";
-
-/* Iconițe SVG desenate din cod (arată la fel pe orice sistem, spre
-   deosebire de simbolurile text, pe care Windows le poate afișa ca emoji) */
-const ICONITE = {
-  play: "M8 5v14l11-7z",
-  pause: "M6 5h4v14H6zM14 5h4v14h-4z",
-  inapoi: "M6 5h2v14H6zM20 5v14L9 12z",
-  inainte: "M16 5h2v14h-2zM4 5v14l11-7z",
-  repeat: "M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z",
-};
-
-function Iconita({ nume }) {
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-      <path d={ICONITE[nume]} fill="currentColor" />
-    </svg>
-  );
-}
-
-/* 75 secunde -> "01:15" (padStart adaugă zero în față) */
-function formatTimp(secunde) {
-  const min = Math.floor(secunde / 60);
-  const sec = Math.floor(secunde % 60);
-  return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-}
+import { Iconita, BaraProgres } from "./Comenzi.jsx";
 
 export default function Player({
   piesa,
@@ -67,13 +43,6 @@ export default function Player({
   let stare = "❚❚ PAUSED";
   if (ruleaza) stare = "▶ PLAYING";
   if (rewind) stare = "⟲ REWINDING...";
-
-  // Click pe bară: poziția click-ului față de lățimea barei = procentul dorit
-  function laClickPeBara(e) {
-    const bara = e.currentTarget.getBoundingClientRect();
-    const procent = (e.clientX - bara.left) / bara.width;
-    onDerulare(procent * piesa.durata);
-  }
 
   return (
     <section className="panel player">
@@ -116,18 +85,8 @@ export default function Player({
         />
       </div>
 
-      {/* Bara de progres: lățimea vine din progres; click = derulare */}
-      <div
-        className={rewind ? "progress rewinding" : "progress"}
-        onClick={laClickPeBara}
-        title="Click pentru derulare"
-      >
-        <span className="progress-fill" style={{ width: `${progres * 100}%` }}></span>
-      </div>
-      <div className="progress-time">
-        <span>{formatTimp(timp)}</span>
-        <span>{formatTimp(piesa.durata)}</span>
-      </div>
+      {/* Bara de progres comună (Comenzi.jsx): click = derulare */}
+      <BaraProgres timp={timp} durata={piesa.durata} rewind={rewind} onDerulare={onDerulare} />
 
       <div className="controls">
         <button type="button" className="ctl" onClick={onInapoi} title="Înapoi" aria-label="Înapoi">

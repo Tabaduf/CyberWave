@@ -133,8 +133,8 @@ body {
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
-  /* Spațiu la bază ca vizualizatorul fix să nu acopere subsolul */
-  padding-bottom: 80px;
+  /* Spațiu la bază ca bara fixă de jos să nu acopere subsolul */
+  padding-bottom: 100px;
 }
 
 /* Efect subtil de scanline retro */
@@ -1053,8 +1053,8 @@ button {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: 76px; /* deasupra vizualizatorului */
-  z-index: 200;
+  bottom: 100px; /* deasupra barei de jos */
+  z-index: 400; /* deasupra jocului și a barei */
   padding: 8px 16px;
   transform: translateX(-50%);
   background: var(--card);
@@ -1078,31 +1078,142 @@ button {
    ------------------------------------------------------------ */
 .app-footer { text-align: center; font-size: 0.8rem; padding: 10px; color: var(--muted); }
 
-/* Vizualizatorul Fixat Jos */
-.hud-visualizer {
+/* ------------------------------------------------------------
+   BARA DE JOS (stil Spotify), fixată la baza ecranului.
+   Păstrează grila și unda din vizualizatorul Etapei 1.
+   ------------------------------------------------------------ */
+.player-bar {
   position: fixed;
-  bottom: 0;
   left: 0;
-  width: 100%;
-  height: 60px;
-  background-color: var(--bg);
+  right: 0;
+  bottom: 0;
+  z-index: 300; /* deasupra jocului, ca muzica să poată fi controlată din joc */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  height: 84px;
+  padding: 0 18px;
+  overflow: hidden;
+  background-color: color-mix(in srgb, var(--bg) 92%, transparent);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--muted) 25%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--muted) 25%, transparent) 1px, transparent 1px);
+  background-size: 10px 10px;
   border-top: 1px solid var(--border);
   box-shadow: 0 -2px 15px color-mix(in srgb, var(--border) 20%, transparent);
-  z-index: 100;
-  overflow: hidden;
-  background-image:
-    linear-gradient(var(--muted) 1px, transparent 1px),
-    linear-gradient(90deg, var(--muted) 1px, transparent 1px);
-  background-size: 10px 10px;
+  backdrop-filter: blur(6px);
 }
 
-/* Animație CSS pentru efectul de undă (stinsă când nu rulează nimic) */
+/* Stânga: copertă + titlu + ♥ */
+.bar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.bar-track { display: flex; flex-direction: column; min-width: 0; }
+.bar-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+/* Mijloc: comenzi + progres */
+.bar-center { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.bar-controls { display: flex; align-items: center; gap: 14px; }
+.bar-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: var(--text);
+  opacity: 0.85;
+  transition: opacity var(--ease), transform var(--ease), color var(--ease);
+}
+.bar-btn:hover { opacity: 1; transform: scale(1.1); color: var(--accent-hover); }
+.bar-btn:disabled { opacity: 0.3; cursor: default; transform: none; }
+.bar-btn.activ svg { animation: rewind-icon 0.9s cubic-bezier(0.3, 0, 0.2, 1); }
+/* Play / pauză: cerc plin, ca la Spotify */
+.bar-main {
+  width: 38px;
+  height: 38px;
+  background: var(--text);
+  color: var(--bg);
+  opacity: 1;
+}
+.bar-main:hover { color: var(--bg); box-shadow: 0 0 12px var(--accent); }
+
+.progress-row { display: flex; align-items: center; gap: 10px; width: 100%; }
+.progress-row .progress { flex: 1; margin-top: 0; }
+.progress-label { font-size: 0.68rem; color: var(--muted); min-width: 3.2em; text-align: center; }
+
+/* Dreapta: volum + joc */
+.bar-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
+.volume-value { width: 2em; font-size: 0.68rem; color: var(--muted); text-align: right; }
+
+/* Slider-ul de volum: șina se colorează până la --val (procentul curent) */
+.volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 110px;
+  height: 4px;
+  margin: 0;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--text) var(--val),
+    color-mix(in srgb, var(--border) 25%, transparent) var(--val)
+  );
+  cursor: pointer;
+}
+/* "Butonul" pe care îl tragi: Chrome / Edge / Brave ... */
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent-hover);
+  box-shadow: 0 0 8px var(--accent-hover);
+  transition: transform var(--ease);
+}
+.volume-slider:hover::-webkit-slider-thumb { transform: scale(1.3); }
+/* ... și Firefox */
+.volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent-hover);
+}
+
+/* Butonul PLAY GAME, în colțul din dreapta jos */
+.game-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+  padding: 7px 12px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  transition: background var(--ease), color var(--ease), box-shadow var(--ease);
+}
+.game-btn:hover,
+.game-btn.activ {
+  background: var(--accent);
+  color: var(--bg);
+  box-shadow: 0 0 14px var(--accent);
+}
+
+/* Unda din Etapa 1, acum o linie animată pe marginea de sus a barei */
 .wave {
   position: absolute;
-  top: 50%;
+  top: 0;
   left: 0;
   width: 200%;
-  height: 3px;
+  height: 2px;
   background: repeating-linear-gradient(
     90deg,
     transparent,
@@ -1111,7 +1222,6 @@ button {
     var(--text) 40px
   );
   box-shadow: 0 0 10px var(--text);
-  transform: translateY(-50%);
   animation: move-wave 1.5s linear infinite;
   opacity: 0.4;
   transition: opacity 0.4s ease;
@@ -1119,8 +1229,97 @@ button {
 .is-playing .wave { opacity: 1; }
 
 @keyframes move-wave {
-  0% { transform: translateY(-50%) translateX(0); }
-  100% { transform: translateY(-50%) translateX(-40px); }
+  from { transform: translateX(0); }
+  to { transform: translateX(-40px); }
+}
+
+
+/* ------------------------------------------------------------
+   JOCUL: strat peste toată pagina, deasupra barei rămâne doar
+   bara de jos (z-index mai mare).
+   ------------------------------------------------------------ */
+.game {
+  position: fixed;
+  inset: 0 0 84px 0; /* se oprește deasupra barei de jos */
+  z-index: 200;
+  background: var(--bg);
+  animation: game-in 0.35s ease;
+}
+@keyframes game-in {
+  from { opacity: 0; transform: scale(1.04); }
+  to { opacity: 1; transform: scale(1); }
+}
+.game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none; /* pe telefon atingerea nu mai derulează pagina */
+  cursor: crosshair;
+}
+.game-hud {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  pointer-events: none; /* click-urile trec prin HUD spre canvas... */
+}
+.game-return {
+  pointer-events: auto; /* ...mai puțin butonul RETURN */
+  padding: 8px 14px;
+  border: 1px solid var(--text);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: background var(--ease), color var(--ease);
+}
+.game-return:hover { background: var(--text); color: var(--bg); }
+.game-track {
+  max-width: 45%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+/* Butonul FIRE, în colțul din dreapta jos al jocului */
+.game-fire {
+  position: absolute;
+  right: 20px;
+  bottom: 36px;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  border: 2px solid var(--accent-hover);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-hover) 18%, transparent);
+  color: var(--accent-hover);
+  font-size: 0.8rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent-hover) 50%, transparent);
+  transition: background var(--ease), transform 0.1s ease;
+}
+.game-fire:hover { background: color-mix(in srgb, var(--accent-hover) 35%, transparent); }
+.game-fire:active { transform: scale(0.92); }
+
+.game-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  margin: 0;
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 1px;
+  color: var(--muted);
+  pointer-events: none;
 }
 
 
@@ -1138,6 +1337,18 @@ button {
   .item-card { flex-direction: column; align-items: flex-start; }
   .card-side { flex-direction: row; align-items: center; gap: 10px; }
   .card-side { width: 100%; justify-content: space-between; }
+
+  /* Bara de jos pe telefon: piesa + comenzi sus, volum + joc jos */
+  .player-bar {
+    grid-template-columns: 1fr;
+    height: auto;
+    gap: 6px;
+    padding: 8px 12px;
+  }
+  .bar-right { justify-content: space-between; }
+  .volume-slider { flex: 1; }
+  .game { inset: 0 0 150px 0; }
+  body { padding-bottom: 170px; }
 }
 
 /* ------------------------------------------------------------

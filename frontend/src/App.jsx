@@ -5,7 +5,9 @@
    ștergerea se fac din pagină, prin funcțiile imutabile din Etapa 2,
    iar contorul din antet se recalculează singur. Tot cu state,
    un buton din antet comută tema luminoasă / întunecată.
-   Nu se redă sunet real: timpul piesei e simulat.
+   Extra: muzica e generată în browser (audio/sintetizator.js),
+   bara de jos controlează piesa și volumul, iar PLAY GAME
+   deschide jocul Tunnel Runner peste pagină.
    ============================================================ */
 
 import { useState, useEffect } from "react";
@@ -13,6 +15,9 @@ import PiesaList from "./components/PiesaList.jsx";
 import Player from "./components/Player.jsx";
 import Genuri from "./components/Genuri.jsx";
 import PlaylistGrid from "./components/PlaylistGrid.jsx";
+import PlayerBar from "./components/PlayerBar.jsx";
+import JocTunel from "./components/JocTunel.jsx";
+import { porneste, opreste, seteazaVolum } from "./audio/sintetizator.js";
 
 
 /* ------------------------------------------------------------
@@ -130,6 +135,9 @@ export default function App() {
   );
   const [playlisturi, setPlaylisturi] = useState(PLAYLISTURI_INITIALE);
   const [mesaj, setMesaj] = useState(null);         // notificarea de jos (toast)
+  const [volum, setVolum] = useState(60);           // 0..100, din slider
+  const [mut, setMut] = useState(false);            // sunet oprit din butonul difuzor
+  const [inJoc, setInJoc] = useState(false);        // jocul e deschis peste pagină
 
   /* --- VALORI DERIVATE ---
      Se recalculează din state la fiecare randare, deci nu pot rămâne
@@ -320,6 +328,29 @@ export default function App() {
     return () => clearTimeout(pas);
   });
 
+  /* --- SUNETUL ---
+     useEffect sincronizează React cu un sistem din afara lui (Web Audio):
+     când se schimbă piesa / PLAY / PAUSE, pornim sau oprim sintetizatorul.
+     Dacă aceeași piesă cântă deja, porneste() nu face nimic. */
+  useEffect(() => {
+    if (ruleaza && !rewind && piesaCurenta) porneste(piesaCurenta);
+    else opreste();
+  }, [ruleaza, rewind, piesaCurenta]);
+
+  // Volumul: la fiecare mișcare a slider-ului sau apăsare pe difuzor
+  useEffect(() => {
+    seteazaVolum(mut ? 0 : volum / 100);
+  }, [volum, mut]);
+
+  // La închiderea aplicației, muzica se oprește ([] = doar la montare / demontare)
+  useEffect(() => () => opreste(), []);
+
+  // Mutarea slider-ului pornește și sunetul, dacă era pe mut
+  function handleVolum(v) {
+    setVolum(v);
+    setMut(false);
+  }
+
   /* Notificarea dispare singură după 2.2 s.
      Rulează doar când se schimbă mesajul ([mesaj] de la final). */
   useEffect(() => {
@@ -337,6 +368,21 @@ export default function App() {
     onLike: handleLike,
     onToggle: handleToggleRedata,
     onDelete: handleDelete,
+  };
+
+  // Comenzile player-ului, folosite și de panoul din stânga, și de bara de jos
+  const comenziPlayer = {
+    piesa: piesaCurenta,
+    ruleaza,
+    timp,
+    rewind,
+    liked: likedIds.includes(curentId),
+    onPlayPause: () => setRuleaza((prev) => !prev),
+    onInapoi: handleInapoi,
+    onInainte: () => treciLa(1),
+    onRepeat: handleRepeat,
+    onDerulare: setTimp,
+    onLike: () => handleLike(piesaCurenta),
   };
 
   return (
@@ -391,20 +437,10 @@ export default function App() {
       </nav>
 
       <main className="container">
-        {/* Stânga: discul și comenzile */}
+        {/* Stânga: discul și comenzile ({...comenziPlayer} = aceleași props ca bara de jos) */}
         <Player
-          piesa={piesaCurenta}
-          ruleaza={ruleaza}
-          timp={timp}
-          rewind={rewind}
-          liked={likedIds.includes(curentId)}
+          {...comenziPlayer}
           playlisturi={playlisturi}
-          onPlayPause={() => setRuleaza((prev) => !prev)}
-          onInapoi={handleInapoi}
-          onInainte={() => treciLa(1)}
-          onRepeat={handleRepeat}
-          onDerulare={setTimp}
-          onLike={() => handleLike(piesaCurenta)}
           onComutaPlaylist={(playlistId) => handleComutaPlaylist(playlistId, curentId)}
           onCreeazaPlaylist={(nume) => handleCreeazaPlaylist(nume, piesaCurenta)}
         />
@@ -471,10 +507,20 @@ export default function App() {
         </div>
       )}
 
-      {/* Vizualizatorul animat doar din CSS, fixat la baza ecranului */}
-      <div className="hud-visualizer">
-        <div className="wave"></div>
-      </div>
+      {/* Jocul: randare condiționată. Stă PESTE pagină, deci App și
+          muzica rămân pornite dedesubt; la ieșire totul e cum l-ai lăsat. */}
+      {inJoc && <JocTunel piesa={piesaCurenta} ruleaza={ruleaza} onIesire={() => setInJoc(false)} />}
+
+      {/* Bara de jos, în stil Spotify (înlocuiește vizualizatorul din Etapa 1) */}
+      <PlayerBar
+        {...comenziPlayer}
+        volum={volum}
+        mut={mut}
+        inJoc={inJoc}
+        onVolum={handleVolum}
+        onMut={() => setMut((prev) => !prev)}
+        onJoc={() => setInJoc((prev) => !prev)}
+      />
     </div>
   );
 }
