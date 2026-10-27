@@ -1,8 +1,8 @@
 /* ============================================================
    CYBERWAVE // PiesaList.jsx
    O listă de piese (coada, liked songs sau random).
-   Primește array-ul prin props și desenează câte un
-   PiesaCard pentru fiecare piesă.
+   Primește array-ul și funcțiile prin props și le transmite,
+   neschimbate, fiecărui PiesaCard. Lista nu modifică nimic singură.
    ============================================================ */
 
 import PiesaCard from "./PiesaCard.jsx";
@@ -16,6 +16,8 @@ export default function PiesaList({
   likedIds,
   onAlege,
   onLike,
+  onToggle,
+  onDelete,
   mesajGol = "[SYS_MSG]: AUDIO_QUEUE EMPTY. NO TRACKS LOADED.",
 }) {
   // 1. Return timpuriu: dacă nu există piese, afișăm mesajul și ne oprim aici
@@ -23,11 +25,10 @@ export default function PiesaList({
     return <p className="empty">{mesajGol}</p>;
   }
 
-  // 2. Altfel, transformăm fiecare piesă într-un card cu map (ca în Etapa 2).
-  //    key={piesa.id} stă pe PiesaCard, adică pe elementul întors direct din map.
-  //    React folosește key ca să recunoască fiecare card între două randări,
-  //    de aceea e id-ul (unic și stabil), nu poziția din listă.
-  //    La click, trimitem în sus piesa și lista din care a fost aleasă.
+  // 2. Altfel, câte un card pentru fiecare piesă (map, ca în Etapa 2).
+  //    key={piesa.id} stă pe PiesaCard, elementul întors direct din map,
+  //    și e id-ul, nu poziția: după o ștergere pozițiile se mută, id-urile nu.
+  //    onToggle și onDelete merg mai departe exact cum au venit din App.
   return (
     <ul className="item-list">
       {piese.map((piesa) => (
@@ -39,6 +40,8 @@ export default function PiesaList({
           liked={likedIds.includes(piesa.id)}
           onAlege={() => onAlege(piesa, piese)}
           onLike={() => onLike(piesa)}
+          onToggle={onToggle}
+          onDelete={onDelete}
         />
       ))}
     </ul>

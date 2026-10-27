@@ -1,9 +1,10 @@
 /* ============================================================
    CYBERWAVE // App.jsx
    Componenta principală a aplicației.
-   Ține datele și STAREA aplicației (piesa de pe disc, play/pauză,
-   timpul derulat, piesele apreciate, playlisturile) și le trimite
-   prin props către componentele care le afișează.
+   Etapa 5: lista de piese stă în STATE (useState). Bifarea și
+   ștergerea se fac din pagină, prin funcțiile imutabile din Etapa 2,
+   iar contorul din antet se recalculează singur. Tot cu state,
+   un buton din antet comută tema luminoasă / întunecată.
    Nu se redă sunet real: timpul piesei e simulat.
    ============================================================ */
 
@@ -15,21 +16,20 @@ import PlaylistGrid from "./components/PlaylistGrid.jsx";
 
 
 /* ------------------------------------------------------------
-   DATE (deasupra funcției App)
-   Codul de aici rulează o singură dată. Tot ce e în interiorul
-   lui App se recreează la fiecare actualizare a ecranului.
-   Câmpuri noi față de Etapa 2: gen, bpm, durata (secunde), liked, cover.
-   cover: null -> pe disc apare "no img found :("
-   liked e doar valoarea de PORNIRE; apoi aprecierile trăiesc în stare.
+   DATE INIȚIALE (deasupra funcției App)
+   Sunt doar valorile de PORNIRE, folosite o singură dată, la prima
+   randare. De aici înainte, ce se afișează vine din state.
+   Câmpuri: id, titlu, redata (bifat = PLAYED), format, gen, bpm,
+   durata (secunde), liked (doar la pornire), cover (null = fără copertă).
    ------------------------------------------------------------ */
-const piese = [
+const PIESE_INITIALE = [
   { id: 1, titlu: "MASTER_BOOT_RECORD - CHKDSK", redata: false, format: "flac", gen: "darksynth", bpm: 140, durata: 252, liked: true, cover: "/covers/cover-01.svg" },
   { id: 2, titlu: "PERTURBATOR - FUTURE_CLUB", redata: true, format: "mp3", gen: "synthwave", bpm: 120, durata: 241, liked: true, cover: null },
   { id: 3, titlu: "KEYGEN_CHURCH - TENEBRE", redata: false, format: "synth", gen: "darksynth", bpm: 100, durata: 318, liked: false, cover: null },
 ];
 
-/* Sugestii pentru panoul RANDOM (date de test, câte una pe gen) */
-const sugestii = [
+/* Sugestiile din panoul RANDOM (câte una pe gen) */
+const SUGESTII_INITIALE = [
   { id: 101, titlu: "NEON_GHOST - NIGHT_DRIVE.EXE", redata: false, format: "mp3", gen: "synthwave", bpm: 110, durata: 214, liked: false, cover: null },
   { id: 102, titlu: "VOID_RUNNER - KERNEL_PANIC", redata: false, format: "flac", gen: "industrial", bpm: 132, durata: 276, liked: false, cover: null },
   { id: 103, titlu: "8BIT_ORACLE - SAVE_STATE", redata: false, format: "synth", gen: "chiptune", bpm: 150, durata: 168, liked: false, cover: null },
@@ -39,11 +39,7 @@ const sugestii = [
   { id: 107, titlu: "AMEN_PROTOCOL - PACKET_STORM", redata: false, format: "mp3", gen: "drum&bass", bpm: 174, durata: 225, liked: false, cover: null },
 ];
 
-/* Toate piesele într-un singur array, ca să găsim orice piesă după id */
-const toatePiesele = [...piese, ...sugestii];
-
-/* Playlisturile de la pornire: fiecare ține doar id-urile pieselor lui.
-   După pornire, playlisturile trăiesc în stare (se pot modifica). */
+/* Playlisturile de la pornire: fiecare ține doar id-urile pieselor lui */
 const PLAYLISTURI_INITIALE = [
   { id: 1, nume: "NIGHT_DRIVE", gen: "synthwave", pieseIds: [101, 2, 104] },
   { id: 2, nume: "BOOT_SEQUENCE", gen: "darksynth", pieseIds: [1, 3, 102] },
@@ -64,6 +60,11 @@ const PAS = 0.25;
 
 /* Cât durează animația de derulare înapoi (milisecunde, la fel ca în CSS) */
 const DURATA_REWIND = 900;
+
+/* Tema de pornire: cea a sistemului de operare */
+function temaInitiala() {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
 
 /* Păianjenul ASCII din mockup, păstrat ca text.
    String.raw și backtick-urile păstrează exact spațiile și rândurile,
@@ -107,71 +108,139 @@ const PAIANJEN = String.raw`
    COMPONENTA PRINCIPALĂ
    ------------------------------------------------------------ */
 export default function App() {
-  /* --- STARE ---
+  /* --- STATE ---
      useState(valoareInițială) întoarce [valoarea, funcțiaDeSchimbare].
-     Când apelăm funcția, React redesenează componenta cu valoarea nouă. */
+     Valoarea nu se modifică niciodată direct (fără push / splice / =):
+     se apelează funcția cu o listă NOUĂ, iar React redesenează. */
+  const [piese, setPiese] = useState(PIESE_INITIALE);         // coada (lista principală)
+  const [sugestii, setSugestii] = useState(SUGESTII_INITIALE); // panoul RANDOM
+  const [tema, setTema] = useState(temaInitiala);             // funcția, fără (): rulează o singură dată
+
   const [tab, setTab] = useState("queue");          // panoul vizibil
   const [gen, setGen] = useState("all");            // filtrul de gen
-  const [coada, setCoada] = useState(piese);        // lista prin care merg ⏮ / ⏭
-  const [curentId, setCurentId] = useState(1);      // piesa de pe disc
+  const [coadaIds, setCoadaIds] = useState(PIESE_INITIALE.map((p) => p.id)); // ordinea pentru ⏮ / ⏭
+  const [curentId, setCurentId] = useState(1);      // piesa de pe disc (null = niciuna)
   const [ruleaza, setRuleaza] = useState(false);    // PLAY sau PAUSE
   const [timp, setTimp] = useState(0);              // secunde derulate
   const [rewind, setRewind] = useState(false);      // animația REPEAT e în curs
 
   // Id-urile pieselor apreciate (pornim de la câmpul liked din date)
   const [likedIds, setLikedIds] = useState(
-    toatePiesele.filter((p) => p.liked).map((p) => p.id)
+    [...PIESE_INITIALE, ...SUGESTII_INITIALE].filter((p) => p.liked).map((p) => p.id)
   );
   const [playlisturi, setPlaylisturi] = useState(PLAYLISTURI_INITIALE);
   const [mesaj, setMesaj] = useState(null);         // notificarea de jos (toast)
 
-  /* --- VALORI CALCULATE din stare și date --- */
-  const piesaCurenta = toatePiesele.find((p) => p.id === curentId);
+  /* --- VALORI DERIVATE ---
+     Se recalculează din state la fiecare randare, deci nu pot rămâne
+     în urma datelor. Contorul din antet NU stă într-un useState separat. */
+  const toatePiesele = [...piese, ...sugestii];
+  const piesaCurenta = toatePiesele.find((p) => p.id === curentId) ?? null;
   const inAsteptare = piese.filter((p) => !p.redata).length;
   const pieseApreciate = toatePiesele.filter((p) => likedIds.includes(p.id));
 
   // Păstrează doar elementele genului ales ("all" = toate)
   const filtreaza = (lista) => lista.filter((p) => gen === "all" || p.gen === gen);
 
+  /* ------------------------------------------------------------
+     ETAPA 5: BIFARE ȘI ȘTERGERE
+     Prefixul handle = funcție care tratează o acțiune a utilizatorului.
+     Forma cu funcție setPiese((prev) => ...) primește mereu cea mai
+     recentă valoare a listei.
+     O piesă e fie în coadă, fie în sugestii: aplicăm aceeași schimbare
+     pe ambele liste, iar cea care nu conține id-ul rămâne neschimbată.
+     ------------------------------------------------------------ */
+
+  // Bifat <-> nebifat: listă nouă, obiect nou doar pentru piesa schimbată
+  function handleToggleRedata(id) {
+    setPiese((prev) => prev.map((p) => (p.id === id ? { ...p, redata: !p.redata } : p)));
+    setSugestii((prev) => prev.map((p) => (p.id === id ? { ...p, redata: !p.redata } : p)));
+  }
+
+  // Ștergere: listă nouă fără piesa respectivă. Scoatem id-ul și din
+  // liked, din playlisturi și din ordinea de redare, ca să nu rămână
+  // trimiteri către o piesă care nu mai există.
+  function handleDelete(id) {
+    const piesa = toatePiesele.find((p) => p.id === id);
+
+    setPiese((prev) => prev.filter((p) => p.id !== id));
+    setSugestii((prev) => prev.filter((p) => p.id !== id));
+    setLikedIds((prev) => prev.filter((x) => x !== id));
+    setCoadaIds((prev) => prev.filter((x) => x !== id));
+    setPlaylisturi((prev) =>
+      prev.map((pl) => ({ ...pl, pieseIds: pl.pieseIds.filter((x) => x !== id) }))
+    );
+
+    // Dacă ștergem piesa de pe disc, oprim player-ul
+    if (id === curentId) {
+      setCurentId(null);
+      setRuleaza(false);
+      setTimp(0);
+    }
+    arataMesaj(`DELETED ${piesa.titlu}`);
+  }
+
+  // Marchează piesa ca redată (la finalul ei), fără să o comute înapoi
+  function marcheazaRedata(id) {
+    setPiese((prev) => prev.map((p) => (p.id === id ? { ...p, redata: true } : p)));
+    setSugestii((prev) => prev.map((p) => (p.id === id ? { ...p, redata: true } : p)));
+  }
+
+  /* --- ETAPA 5: TEMA LUMINOASĂ / ÎNTUNECATĂ ---
+     State-ul ține minte tema pentru textul butonului; atributul
+     data-theme de pe <html> schimbă variabilele CSS (vezi App.css).
+     Scrierea pe <html> se face aici, la click, nu în corpul componentei. */
+  function handleTema() {
+    const noua = tema === "dark" ? "light" : "dark";
+    setTema(noua);
+    document.documentElement.dataset.theme = noua;
+  }
+
   /* --- ACȚIUNI PLAYER --- */
 
   // Alege o piesă dintr-o listă: o pune pe disc și o pornește.
-  // Lista devine "coada" prin care merg butoanele înainte / înapoi.
-  function alegePiesa(piesa, lista) {
-    setCoada(lista);
+  // Ordinea listei devine ordinea pentru butoanele înainte / înapoi.
+  function handleAlegePiesa(piesa, lista) {
+    setCoadaIds(lista.map((p) => p.id));
     setCurentId(piesa.id);
     setTimp(0);
     setRuleaza(true);
   }
 
   // Click pe un playlist: transformăm id-urile în piese și pornim prima
-  function alegePlaylist(playlist) {
+  function handleAlegePlaylist(playlist) {
     if (playlist.pieseIds.length === 0) {
       arataMesaj(`${playlist.nume} IS EMPTY`);
       return;
     }
     const lista = playlist.pieseIds.map((id) => toatePiesele.find((p) => p.id === id));
-    alegePiesa(lista[0], lista);
+    handleAlegePiesa(lista[0], lista);
   }
 
-  // Trece la piesa următoare (+1) sau anterioară (-1) din coadă.
+  // Trece la piesa următoare (+1) sau anterioară (-1).
+  // Păstrăm doar id-urile care încă există (unele pot fi șterse între timp).
   // % (restul împărțirii) face lista circulară: după ultima vine prima.
   function treciLa(directie) {
-    const index = coada.findIndex((p) => p.id === curentId);
-    const nou = (index + directie + coada.length) % coada.length;
-    setCurentId(coada[nou].id);
+    const lista = coadaIds.filter((id) => toatePiesele.some((p) => p.id === id));
+    if (lista.length === 0) {
+      setRuleaza(false);
+      return;
+    }
+    const index = lista.indexOf(curentId);
+    const nou = (index + directie + lista.length) % lista.length;
+    setCurentId(lista[nou]);
     setTimp(0);
   }
 
-  // Înapoi: ca la playerele reale, dacă piesa a trecut de 3 secunde,
-  // prima apăsare o ia de la capăt; altfel sare la piesa anterioară.
-  function inapoi() {
+  // Înapoi: dacă piesa a trecut de 3 secunde, o ia de la capăt;
+  // altfel sare la piesa anterioară (ca la playerele reale).
+  function handleInapoi() {
     if (timp > 3) setTimp(0);
     else treciLa(-1);
   }
 
   // REPEAT: discul se învârte rapid înapoi, apoi piesa pornește de la 0
-  function repeta() {
+  function handleRepeat() {
     setRewind(true);
     setTimp(0); // brațul și bara de progres alunecă înapoi la început (tranziție CSS)
     setTimeout(() => {
@@ -180,10 +249,7 @@ export default function App() {
     }, DURATA_REWIND);
   }
 
-  /* --- ACȚIUNI LIKED / PLAYLISTURI ---
-     Aceleași reguli ca în Etapa 2: nu modificăm array-ul vechi,
-     ci construim unul NOU (filter, map, spread). Așa React vede
-     schimbarea și redesenează imediat tot ce depinde de el. */
+  /* --- ACȚIUNI LIKED / PLAYLISTURI (tot imutabile) --- */
 
   // Afișează o notificare scurtă jos pe ecran
   function arataMesaj(text) {
@@ -191,23 +257,21 @@ export default function App() {
   }
 
   // ♥: dacă piesa e apreciată o scoatem, altfel o adăugăm
-  function comutaLike(piesa) {
-    if (likedIds.includes(piesa.id)) {
-      setLikedIds(likedIds.filter((id) => id !== piesa.id));
-      arataMesaj(`♡ REMOVED FROM LIKED_SONGS`);
-    } else {
-      setLikedIds([...likedIds, piesa.id]);
-      arataMesaj(`♥ ADDED TO LIKED_SONGS`);
-    }
+  function handleLike(piesa) {
+    const eraApreciata = likedIds.includes(piesa.id);
+    setLikedIds((prev) =>
+      eraApreciata ? prev.filter((id) => id !== piesa.id) : [...prev, piesa.id]
+    );
+    arataMesaj(eraApreciata ? "♡ REMOVED FROM LIKED_SONGS" : "♥ ADDED TO LIKED_SONGS");
   }
 
   // Adaugă piesa în playlist sau o scoate, dacă era deja acolo
-  function comutaInPlaylist(playlistId, piesaId) {
+  function handleComutaPlaylist(playlistId, piesaId) {
     const playlist = playlisturi.find((pl) => pl.id === playlistId);
     const exista = playlist.pieseIds.includes(piesaId);
 
-    setPlaylisturi(
-      playlisturi.map((pl) => {
+    setPlaylisturi((prev) =>
+      prev.map((pl) => {
         if (pl.id !== playlistId) return pl; // celelalte rămân neschimbate
         const pieseIds = exista
           ? pl.pieseIds.filter((id) => id !== piesaId)
@@ -220,7 +284,7 @@ export default function App() {
 
   // Playlist nou, care pornește cu piesa curentă.
   // Validare ca în Etapa 2: numele nu poate fi gol și nici repetat.
-  function creeazaPlaylist(numeBrut, piesa) {
+  function handleCreeazaPlaylist(numeBrut, piesa) {
     const nume = numeBrut.trim().toUpperCase().replace(/\s+/g, "_"); // "chill mix" -> "CHILL_MIX"
     if (nume === "") return false;
     if (playlisturi.some((pl) => pl.nume === nume)) {
@@ -230,23 +294,27 @@ export default function App() {
 
     // id nou = cel mai mare id + 1 (aceeași idee ca nextId din Etapa 2)
     const id = playlisturi.reduce((max, pl) => Math.max(max, pl.id), 0) + 1;
-    setPlaylisturi([...playlisturi, { id, nume, gen: piesa.gen, pieseIds: [piesa.id] }]);
+    setPlaylisturi((prev) => [...prev, { id, nume, gen: piesa.gen, pieseIds: [piesa.id] }]);
     arataMesaj(`CREATED ${nume}`);
     return true;
   }
 
   /* --- CEASUL PIESEI ---
-     useEffect rulează DUPĂ fiecare desenare a componentei.
+     useEffect rulează DUPĂ fiecare randare a componentei.
      Cât timp e PLAY, programăm un pas de timp peste 0.25 s; pasul
      schimbă timpul -> componenta se redesenează -> se programează
-     următorul pas. La final de piesă trecem la următoarea.
+     următorul pas. La final, piesa e marcată PLAYED și pornește următoarea.
      Funcția din return anulează pasul programat (ex.: s-a dat PAUSE). */
   useEffect(() => {
     if (!ruleaza || rewind || !piesaCurenta) return;
 
     const pas = setTimeout(() => {
-      if (timp + PAS >= piesaCurenta.durata) treciLa(1);
-      else setTimp(timp + PAS);
+      if (timp + PAS >= piesaCurenta.durata) {
+        marcheazaRedata(piesaCurenta.id);
+        treciLa(1);
+      } else {
+        setTimp((prev) => prev + PAS);
+      }
     }, PAS * 1000);
 
     return () => clearTimeout(pas);
@@ -260,6 +328,17 @@ export default function App() {
     return () => clearTimeout(t);
   }, [mesaj]);
 
+  // Funcțiile pentru carduri, aceleași pentru toate listele
+  const actiuniCard = {
+    curentId,
+    ruleaza,
+    likedIds,
+    onAlege: handleAlegePiesa,
+    onLike: handleLike,
+    onToggle: handleToggleRedata,
+    onDelete: handleDelete,
+  };
+
   return (
     // data-gen alege paleta de culori a genului piesei de pe disc (vezi App.css)
     <div className={ruleaza ? "app is-playing" : "app"} data-gen={piesaCurenta ? piesaCurenta.gen : "all"}>
@@ -267,13 +346,24 @@ export default function App() {
       <pre className="ascii-spider" aria-hidden="true">{PAIANJEN}</pre>
 
       <header className="app-header">
+        {/* Etapa 5: butonul de temă, primul în antet.
+            Textul e derivat din state: arată tema în care se TRECE. */}
+        <button
+          type="button"
+          className="theme-toggle"
+          onClick={handleTema}
+          aria-pressed={tema === "dark"}
+        >
+          {tema === "dark" ? "◐ LIGHT_MODE" : "◑ DARK_MODE"}
+        </button>
+
         <div className="header-glitch">
           {/* "//" pus ca text între acolade, ca să nu fie confundat cu un comentariu */}
           <h1>{"// CYBERWAVE_OS"}</h1>
           <p>SYSTEM.AUDIO.INTERFACE_v1.0</p>
         </div>
 
-        {/* Contorul se recalculează automat când se schimbă datele sau starea */}
+        {/* Contorul: valori derivate din state, recalculate la fiecare randare */}
         <p className="app-count">
           [SYS_MSG]: {piese.length} TRACKS FOUND. {inAsteptare} PENDING. {likedIds.length} LIKED.
         </p>
@@ -309,29 +399,26 @@ export default function App() {
           rewind={rewind}
           liked={likedIds.includes(curentId)}
           playlisturi={playlisturi}
-          onPlayPause={() => setRuleaza(!ruleaza)}
-          onInapoi={inapoi}
+          onPlayPause={() => setRuleaza((prev) => !prev)}
+          onInapoi={handleInapoi}
           onInainte={() => treciLa(1)}
-          onRepeat={repeta}
+          onRepeat={handleRepeat}
           onDerulare={setTimp}
-          onLike={() => comutaLike(piesaCurenta)}
-          onComutaPlaylist={(playlistId) => comutaInPlaylist(playlistId, curentId)}
-          onCreeazaPlaylist={(nume) => creeazaPlaylist(nume, piesaCurenta)}
+          onLike={() => handleLike(piesaCurenta)}
+          onComutaPlaylist={(playlistId) => handleComutaPlaylist(playlistId, curentId)}
+          onCreeazaPlaylist={(nume) => handleCreeazaPlaylist(nume, piesaCurenta)}
         />
 
         {/* Dreapta: se desenează doar panoul tabului ales (randare condiționată).
-            key={tab} face panoul nou la fiecare schimbare -> animația de intrare rulează din nou. */}
+            key={tab} face panoul nou la fiecare schimbare -> animația de intrare rulează din nou.
+            {...actiuniCard} trimite toate câmpurile obiectului ca props separate. */}
         <section className="panel tab-panel" key={tab}>
           {tab === "queue" && (
             <>
               <h2>&gt;&gt; AUDIO_QUEUE</h2>
               <PiesaList
                 piese={filtreaza(piese)}
-                curentId={curentId}
-                ruleaza={ruleaza}
-                likedIds={likedIds}
-                onAlege={alegePiesa}
-                onLike={comutaLike}
+                {...actiuniCard}
                 mesajGol={gen === "all" ? undefined : "[SYS_MSG]: NO TRACKS OF THIS GENRE IN QUEUE."}
               />
             </>
@@ -342,11 +429,7 @@ export default function App() {
               <h2>&gt;&gt; LIKED_SONGS</h2>
               <PiesaList
                 piese={filtreaza(pieseApreciate)}
-                curentId={curentId}
-                ruleaza={ruleaza}
-                likedIds={likedIds}
-                onAlege={alegePiesa}
-                onLike={comutaLike}
+                {...actiuniCard}
                 mesajGol="[SYS_MSG]: NO LIKED TRACKS HERE. PRESS ♡ ON A TRACK."
               />
             </>
@@ -357,12 +440,8 @@ export default function App() {
               <h2>&gt;&gt; RANDOM.SEED</h2>
               <PiesaList
                 piese={filtreaza(sugestii)}
-                curentId={curentId}
-                ruleaza={ruleaza}
-                likedIds={likedIds}
-                onAlege={alegePiesa}
-                onLike={comutaLike}
-                mesajGol="[SYS_MSG]: NOTHING TO SHUFFLE IN THIS GENRE."
+                {...actiuniCard}
+                mesajGol="[SYS_MSG]: NOTHING TO SHUFFLE HERE."
               />
             </>
           )}
@@ -374,7 +453,7 @@ export default function App() {
                 playlisturi={filtreaza(playlisturi)}
                 toatePiesele={toatePiesele}
                 curentId={curentId}
-                onAlege={alegePlaylist}
+                onAlege={handleAlegePlaylist}
               />
             </>
           )}

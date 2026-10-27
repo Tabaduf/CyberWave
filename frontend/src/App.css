@@ -3,6 +3,7 @@
    Stilurile din Etapa 1, plus interfața nouă: meniuri sus,
    genuri cu palete proprii, player cu disc de vinil,
    liked / random / playlists, like și adăugare în playlist.
+   Etapa 5: tema luminoasă / întunecată, checkbox și ștergere în card.
    ============================================================ */
 
 * {
@@ -21,14 +22,24 @@
 @property --accent       { syntax: '<color>'; inherits: true; initial-value: #d942ff; }
 @property --accent-hover { syntax: '<color>'; inherits: true; initial-value: #ff73ff; }
 
+/* --- TEMA ÎNTUNECATĂ (implicită, designul din Etapa 1) ---
+   --p-* = culorile "neon" ale paletei (vezi genurile mai jos).
+   --darken = cât de mult se închid culorile neon: 0% în tema
+   întunecată, 45% în cea luminoasă, ca textul să se citească pe alb. */
 :root {
-  /* Tema Terminal (Mov Neon pe Negru) = paleta implicită */
   --bg: #07030a;
-  --text: #d942ff;
-  --muted: #8b3ab3;
-  --border: #b026ff;
-  --accent: #d942ff;
-  --accent-hover: #ff73ff;
+  --surface: #07030a;              /* baza panourilor */
+  --darken: 0%;
+  --input-bg: rgba(0, 0, 0, 0.5);
+  --scan: 0.25;                    /* cât de vizibile sunt liniile de scanare */
+  --danger: #ff3355;
+
+  /* Paleta implicită: mov neon */
+  --p-text: #d942ff;
+  --p-muted: #8b3ab3;
+  --p-border: #b026ff;
+  --p-accent: #d942ff;
+  --p-hover: #ff73ff;
 
   /* Etichete de format */
   --badge-flac: #00f0ff;
@@ -39,32 +50,82 @@
   --ease: 0.25s ease;
 }
 
-/* Fundalul panourilor e un negru nuanțat cu culoarea paletei.
-   color-mix amestecă două culori: aici 10% chenar + 90% negru. */
+/* --- ETAPA 5: TEMA LUMINOASĂ ---
+   1) Tema sistemului, dacă utilizatorul NU a ales explicit tema întunecată.
+   2) Tema aleasă din buton (data-theme pe <html>), care are prioritate.
+   Designul de bază e întunecat, așa că logica e oglindită față de ghid:
+   :not([data-theme="dark"]) lasă butonul să revină la întunecat
+   chiar dacă sistemul e pe luminos. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f6f1fa;
+    --surface: #fdfbff;
+    --darken: 45%;
+    --input-bg: rgba(255, 255, 255, 0.8);
+    --scan: 0.05;
+    --danger: #d0002a;
+    --badge-flac: #0089a0;
+    --badge-mp3: #d1006a;
+  }
+}
+
+:root[data-theme="light"] {
+  --bg: #f6f1fa;
+  --surface: #fdfbff;
+  --darken: 45%;
+  --input-bg: rgba(255, 255, 255, 0.8);
+  --scan: 0.05;
+  --danger: #d0002a;
+  --badge-flac: #0089a0;
+  --badge-mp3: #d1006a;
+}
+
+/* Tema aleasă explicit pe întunecat (valorile de bază, puse din nou,
+   ca să bată regula @media de mai sus când sistemul e pe luminos) */
+:root[data-theme="dark"] {
+  --bg: #07030a;
+  --surface: #07030a;
+  --darken: 0%;
+  --input-bg: rgba(0, 0, 0, 0.5);
+  --scan: 0.25;
+  --danger: #ff3355;
+}
+
+/* --- Culorile folosite efectiv în pagină ---
+   Se obțin din paleta genului (--p-*) și din temă (--darken):
+   color-mix amestecă neonul cu un mov foarte închis, în proporția --darken.
+   Așa fiecare gen arată bine în ambele teme, fără reguli separate
+   pentru fiecare componentă. */
 :root, [data-gen] {
-  --card: color-mix(in srgb, var(--border) 10%, #07030a);
+  --text: color-mix(in srgb, var(--p-text), #14061c var(--darken));
+  --muted: color-mix(in srgb, var(--p-muted), #14061c var(--darken));
+  --border: color-mix(in srgb, var(--p-border), #14061c var(--darken));
+  --accent: color-mix(in srgb, var(--p-accent), #14061c var(--darken));
+  --accent-hover: color-mix(in srgb, var(--p-hover), #14061c var(--darken));
+  /* Fundalul panourilor: 10% culoarea chenarului + baza temei */
+  --card: color-mix(in srgb, var(--border) 10%, var(--surface));
 }
 
 /* --- Paletele genurilor ---
    data-gen e pus pe .app (după piesa de pe disc), pe pastilele de gen,
    pe etichetele de gen din carduri și pe playlisturi. */
-[data-gen="all"]        { --text: #d942ff; --muted: #8b3ab3; --border: #b026ff; --accent: #d942ff; --accent-hover: #ff73ff; }
+[data-gen="all"]        { --p-text: #d942ff; --p-muted: #8b3ab3; --p-border: #b026ff; --p-accent: #d942ff; --p-hover: #ff73ff; }
 /* apus de soare: roz + portocaliu */
-[data-gen="synthwave"]  { --text: #ff71ce; --muted: #b0537f; --border: #ff2a6d; --accent: #ffb86c; --accent-hover: #ffd319; }
+[data-gen="synthwave"]  { --p-text: #ff71ce; --p-muted: #b0537f; --p-border: #ff2a6d; --p-accent: #ffb86c; --p-hover: #ffd319; }
 /* întunecat, agresiv: roșu sânge */
-[data-gen="darksynth"]  { --text: #ff3b3b; --muted: #8a1f2b; --border: #d10024; --accent: #ff3b3b; --accent-hover: #ff7070; }
+[data-gen="darksynth"]  { --p-text: #ff3b3b; --p-muted: #8a1f2b; --p-border: #d10024; --p-accent: #ff3b3b; --p-hover: #ff7070; }
 /* consolă de jocuri: verde + galben */
-[data-gen="chiptune"]   { --text: #8bff4a; --muted: #3f8a2a; --border: #39ff14; --accent: #ffe600; --accent-hover: #fff27a; }
+[data-gen="chiptune"]   { --p-text: #8bff4a; --p-muted: #3f8a2a; --p-border: #39ff14; --p-accent: #ffe600; --p-hover: #fff27a; }
 /* metal și rugină: oțel + portocaliu */
-[data-gen="industrial"] { --text: #ff8c32; --muted: #7d6a5a; --border: #c0c4c8; --accent: #ff8c32; --accent-hover: #ffb37a; }
+[data-gen="industrial"] { --p-text: #ff8c32; --p-muted: #7d6a5a; --p-border: #c0c4c8; --p-accent: #ff8c32; --p-hover: #ffb37a; }
 /* pastel anii '90: roz + bleu */
-[data-gen="vaporwave"]  { --text: #ff9ff3; --muted: #8f7fb3; --border: #48dbfb; --accent: #ff9ff3; --accent-hover: #c8f7ff; }
+[data-gen="vaporwave"]  { --p-text: #ff9ff3; --p-muted: #8f7fb3; --p-border: #48dbfb; --p-accent: #ff9ff3; --p-hover: #c8f7ff; }
 /* cald, relaxat: maro + crem */
-[data-gen="lo-fi"]      { --text: #e8c39e; --muted: #8d7058; --border: #c08a5b; --accent: #e8c39e; --accent-hover: #fff0db; }
+[data-gen="lo-fi"]      { --p-text: #e8c39e; --p-muted: #8d7058; --p-border: #c08a5b; --p-accent: #e8c39e; --p-hover: #fff0db; }
 /* rapid, electric: verde acid + albastru */
-[data-gen="drum&bass"]  { --text: #00ffa3; --muted: #1f8a6a; --border: #00b3ff; --accent: #00ffa3; --accent-hover: #8affd8; }
+[data-gen="drum&bass"]  { --p-text: #00ffa3; --p-muted: #1f8a6a; --p-border: #00b3ff; --p-accent: #00ffa3; --p-hover: #8affd8; }
 /* calm, spațial: albastru deschis */
-[data-gen="ambient"]    { --text: #9fd8ff; --muted: #4d7393; --border: #3a8dde; --accent: #9fd8ff; --accent-hover: #d4eeff; }
+[data-gen="ambient"]    { --p-text: #9fd8ff; --p-muted: #4d7393; --p-border: #3a8dde; --p-accent: #9fd8ff; --p-hover: #d4eeff; }
 
 body {
   margin: 0;
@@ -82,7 +143,7 @@ body::after {
   display: block;
   position: fixed;
   top: 0; left: 0; bottom: 0; right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, var(--scan)) 50%);
   background-size: 100% 4px;
   z-index: 999;
   pointer-events: none;
@@ -662,7 +723,7 @@ button {
   min-width: 0;
   padding: 6px 8px;
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--input-bg);
   color: var(--text);
   font-family: inherit;
   font-size: 0.72rem;
@@ -1076,8 +1137,109 @@ button {
   .tab { padding: 6px 10px; font-size: 0.75rem; }
   .item-card { flex-direction: column; align-items: flex-start; }
   .card-side { flex-direction: row; align-items: center; gap: 10px; }
-  .mini-disc { display: none; } /* pe telefon nu e loc lângă titlu */
+  .card-side { width: 100%; justify-content: space-between; }
 }
+
+/* ------------------------------------------------------------
+   ETAPA 5: CHECKBOX, ȘTERGERE ȘI BUTONUL DE TEMĂ
+   ------------------------------------------------------------ */
+
+/* label-ul cu checkbox + titlu: ocupă spațiul din mijlocul cardului */
+.piesa-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+/* Checkbox în stil terminal: pătrat cu chenar, umplut când e bifat */
+.piesa-main input[type="checkbox"] {
+  appearance: none; /* scoatem aspectul implicit al browserului */
+  flex-shrink: 0;
+  display: grid;
+  place-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  cursor: pointer;
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+.piesa-main input[type="checkbox"]::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: var(--text);
+  box-shadow: 0 0 6px var(--text);
+  transform: scale(0);
+  transition: transform 0.15s ease;
+}
+.piesa-main input[type="checkbox"]:checked::before { transform: scale(1); }
+.piesa-main:hover input[type="checkbox"] { box-shadow: 0 0 8px var(--border); }
+
+/* Partea dreaptă a cardului: ON_DECK + ♥ sus, starea, apoi ștergerea */
+.card-side-top { display: flex; align-items: center; gap: 8px; }
+
+/* Butonul de ștergere: culoare de pericol, plin la hover */
+.btn-danger {
+  margin-top: 2px;
+  padding: 3px 8px;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 0.68rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: background var(--ease), color var(--ease), box-shadow var(--ease);
+}
+.btn-danger:hover {
+  background: var(--danger);
+  color: var(--bg);
+  box-shadow: 0 0 10px var(--danger);
+}
+
+/* Mini-discul e acum buton de play: ▶ apare peste el la hover */
+.mini-disc { padding: 0; }
+.mini-play {
+  position: absolute;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  color: #fff;
+  filter: drop-shadow(0 0 4px #000);
+  opacity: 0;
+  transition: opacity var(--ease);
+}
+.mini-disc:hover .mini-play,
+.mini-disc:focus-visible .mini-play { opacity: 1; }
+.mini-disc:hover img,
+.mini-disc:hover .mini-label { filter: brightness(0.5); }
+
+/* Butonul de temă, în colțul antetului */
+.theme-toggle {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: background var(--ease), box-shadow var(--ease);
+}
+.theme-toggle:hover {
+  background: color-mix(in srgb, var(--text) 15%, transparent);
+  box-shadow: 0 0 10px var(--border);
+}
+
+/* Pe telefon butonul de temă stă deasupra titlului, nu peste el */
+@media (max-width: 700px) {
+  .theme-toggle { position: static; margin-bottom: 12px; }
+}
+
 
 /* Dacă sistemul cere "mai puțină mișcare" (ex.: Windows cu efectele de animație
    oprite), scoatem animațiile decorative. Discurile se învârt în continuare,
