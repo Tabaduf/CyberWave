@@ -13,7 +13,9 @@
       - îi dai drumul încet  -> dispare repede (fade) și revine pe platan;
       - îl arunci tare într-un perete al ecranului -> se SPARGE,
         iar playerul trece la piesa următoare;
-      - aruncat prea încet, ricoșează din pereți, se oprește și revine.
+      - aruncat prea încet, ricoșează din pereți, se oprește și revine;
+      - lăsat peste un playlist (tabul PLAYLISTS) -> zboară în el și
+        piesa e adăugată în acel playlist.
    ============================================================ */
 
 import { useState, useRef, useEffect } from "react";
@@ -91,6 +93,8 @@ export default function Vinil({
   onRidica,
   onRevenire,
   onSpart,
+  onTintaPlaylist,
+  onDropPlaylist,
 }) {
   // Cât a fost rotit discul de mână, în total (grade)
   const [unghiManual, setUnghiManual] = useState(0);
@@ -107,6 +111,9 @@ export default function Vinil({
   const discZburatorRef = useRef(null);
   const animatieRef = useRef(0);
   const temporizatorRef = useRef(0);
+  // Playlistul peste care e discul acum (id sau null)
+  const tintaRef = useRef(null);
+  const [pesteTinta, setPesteTinta] = useState(false);
 
   // Dacă discul dispare din pagină (ex.: altă piesă), oprim animațiile rămase
   useEffect(() => {
@@ -179,6 +186,7 @@ export default function Vinil({
       z.esantioane.push({ x: z.x, y: z.y, t: acum });
       z.esantioane = z.esantioane.filter((s) => acum - s.t < 100); // doar ultimele 100 ms
       aplicaPozitie();
+      verificaTinta(e.clientX, e.clientY);
       return;
     }
     if (!scratching) return;
@@ -225,9 +233,59 @@ export default function Vinil({
     setMod("ridicat");
   }
 
+  /* Ce playlist e sub mouse? Discul din mână are pointer-events: none,
+     deci elementFromPoint "vede" prin el. Playlisturile există în pagină
+     doar pe tabul PLAYLISTS, deci în rest nu se găsește nicio țintă.
+     Anunțăm App-ul doar când ținta se schimbă, nu la fiecare mișcare. */
+  function verificaTinta(x, y) {
+    const card = document.elementFromPoint(x, y)?.closest("[data-playlist-id]");
+    const id = card ? Number(card.dataset.playlistId) : null;
+    if (id !== tintaRef.current) {
+      tintaRef.current = id;
+      setPesteTinta(id !== null);
+      onTintaPlaylist(id);
+    }
+  }
+
+  /* --- Discul lăsat peste un playlist: zboară în copertă și se micșorează --- */
+  function intraInPlaylist(id) {
+    setMod("drop");
+    const z = zbor.current;
+    const el = discZburatorRef.current;
+    const coperta = document.querySelector(`[data-playlist-id="${id}"] .playlist-cover`);
+    const r = start.r;
+
+    // Animație din JavaScript (Web Animations API): de unde e discul, până în centrul copertei
+    let tinta = { x: z.x, y: z.y };
+    if (coperta) {
+      const c = coperta.getBoundingClientRect();
+      tinta = { x: c.left + c.width / 2, y: c.top + c.height / 2 };
+    }
+    el?.animate(
+      [
+        { transform: `translate(${z.x - r}px, ${z.y - r}px) rotate(${z.rot}deg) scale(1)`, opacity: 1 },
+        { transform: `translate(${tinta.x - r}px, ${tinta.y - r}px) rotate(${z.rot + 270}deg) scale(0.15)`, opacity: 0.3 },
+      ],
+      { duration: 380, easing: "cubic-bezier(0.5, 0, 0.75, 0)", fill: "forwards" }
+    );
+
+    temporizatorRef.current = setTimeout(() => {
+      setMod("platan");
+      setIntors(true);
+      setPesteTinta(false);
+      tintaRef.current = null;
+      onDropPlaylist(id); // App adaugă piesa și pornește animația cardului
+    }, 380);
+  }
+
   /* --- Mâna se ridică --- */
   function laEliberare() {
     if (mod === "ridicat") {
+      // Peste un playlist? Atunci nu se aruncă și nu se sparge: intră în playlist
+      if (tintaRef.current !== null) {
+        intraInPlaylist(tintaRef.current);
+        return;
+      }
       // Viteza de aruncare = drumul din ultimele 100 ms / timpul lui.
       // Dacă mâna a stat pe loc înainte să dea drumul, nu mai sunt eșantioane
       // recente, deci viteza e 0 și discul doar e lăsat jos.
@@ -337,17 +395,17 @@ export default function Vinil({
       </div>
 
       <span className="dj-hint" aria-hidden="true">
-        {scratching ? "◎ SCRATCH" : "SPIN = SCRATCH · PULL OUT = LIFT"}
+        {scratching ? "◎ SCRATCH" : mod === "ridicat" ? "THROW · DROP · OR DROP ON A PLAYLIST" : "SPIN = SCRATCH · PULL OUT = LIFT"}
       </span>
 
       {/* Discul în mână / în zbor. createPortal îl desenează direct în <body>,
           deasupra întregii pagini, ca să poată zbura oriunde pe ecran.
           data-gen păstrează culorile genului și în afara aplicației. */}
-      {(mod === "ridicat" || mod === "zbor" || mod === "fade") &&
+      {(mod === "ridicat" || mod === "zbor" || mod === "fade" || mod === "drop") &&
         createPortal(
           <div
             ref={discZburatorRef}
-            className={`disc-zbor ${mod}`}
+            className={`disc-zbor ${mod}${pesteTinta ? " peste-tinta" : ""}`}
             data-gen={piesa.gen}
             style={{
               width: diametru,
@@ -356,7 +414,11 @@ export default function Vinil({
             }}
             aria-hidden="true"
           >
-            <FataDisc piesa={piesa} />
+            {/* Corpul discului: aici se aplică mărirea / micșorarea (CSS),
+                separat de poziție, ca scara să nu "tragă" discul din locul mouse-ului */}
+            <div className="disc-zbor-corp">
+              <FataDisc piesa={piesa} />
+            </div>
           </div>,
           document.body
         )}

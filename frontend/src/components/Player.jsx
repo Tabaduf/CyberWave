@@ -33,6 +33,8 @@ export default function Player({
   onRidica,
   onRevenire,
   onSpart,
+  onTintaPlaylist,
+  onDropPlaylist,
 }) {
   // Return timpuriu: nicio piesă de redat
   if (!piesa) {
@@ -79,6 +81,8 @@ export default function Player({
         onRidica={onRidica}
         onRevenire={onRevenire}
         onSpart={onSpart}
+        onTintaPlaylist={onTintaPlaylist}
+        onDropPlaylist={onDropPlaylist}
       />
 
       <div className="track-info">

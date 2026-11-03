@@ -33,6 +33,8 @@
   --input-bg: rgba(0, 0, 0, 0.5);
   --scan: 0.25;                    /* cât de vizibile sunt liniile de scanare */
   --danger: #ff3355;
+  --error-bg: #2a0a14;             /* Etapa 6: fundalul mesajului de eroare */
+  --error-border: #6b1a33;
 
   /* Paleta implicită: mov neon */
   --p-text: #d942ff;
@@ -64,6 +66,8 @@
     --input-bg: rgba(255, 255, 255, 0.8);
     --scan: 0.05;
     --danger: #d0002a;
+    --error-bg: #fdf2f8;
+    --error-border: #fbcfe8;
     --badge-flac: #0089a0;
     --badge-mp3: #d1006a;
   }
@@ -76,6 +80,8 @@
   --input-bg: rgba(255, 255, 255, 0.8);
   --scan: 0.05;
   --danger: #d0002a;
+  --error-bg: #fdf2f8;
+  --error-border: #fbcfe8;
   --badge-flac: #0089a0;
   --badge-mp3: #d1006a;
 }
@@ -89,6 +95,8 @@
   --input-bg: rgba(0, 0, 0, 0.5);
   --scan: 0.25;
   --danger: #ff3355;
+  --error-bg: #2a0a14;
+  --error-border: #6b1a33;
 }
 
 /* --- Culorile folosite efectiv în pagină ---
@@ -1119,12 +1127,20 @@ button {
   animation: none;
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--border) 15%, #07030a), 0 0 30px var(--border);
 }
+/* Mărimea discului se schimbă pe corpul lui, nu pe .disc-zbor:
+   .disc-zbor are deja transform-ul de poziție, iar o scară pusă tot acolo
+   ar muta și poziția (s-ar scala și deplasarea) */
+.disc-zbor-corp {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.2s ease;
+}
 /* Ridicat: crește puțin, ca și cum ar fi mai aproape de tine */
-.disc-zbor.ridicat { scale: 1.08; transition: scale 0.15s ease; }
+.disc-zbor.ridicat .disc-zbor-corp { transform: scale(1.08); }
 /* Lăsat jos: dispare repede */
-.disc-zbor.fade { animation: disc-fade 0.35s ease forwards; }
+.disc-zbor.fade .disc-zbor-corp { animation: disc-fade 0.35s ease forwards; }
 @keyframes disc-fade {
-  to { opacity: 0; scale: 0.7; }
+  to { opacity: 0; transform: scale(0.7); }
 }
 
 /* Cioburile: fiecare e o "felie" din disc (clip-path) care zboară în direcția ei */
@@ -1158,6 +1174,128 @@ button {
   from { opacity: 1; transform: scale(0.4); }
   to { opacity: 0; transform: scale(1.5); }
 }
+
+
+/* ------------------------------------------------------------
+   DISC LĂSAT PESTE UN PLAYLIST
+   ------------------------------------------------------------ */
+
+/* Discul din mână se micșorează când e deasupra unui playlist */
+.disc-zbor.peste-tinta .disc-zbor-corp { transform: scale(0.6); }
+
+/* Cardul de sub disc: se ridică, strălucește și spune ce se va întâmpla */
+.playlist-card { position: relative; }
+.playlist-card.tinta {
+  transform: translateY(-6px) scale(1.04);
+  box-shadow: 0 0 0 2px var(--accent-hover), 0 0 24px var(--accent-hover);
+}
+.playlist-card.tinta::after {
+  content: "DROP TO ADD";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  color: var(--accent-hover);
+  font-weight: bold;
+  letter-spacing: 2px;
+  pointer-events: none;
+  animation: blink 0.8s steps(2) infinite;
+}
+
+/* Efectul după drop: un inel care pulsează și "+1" care urcă și dispare */
+.pl-drop-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  animation: pl-pulse 0.7s ease-out forwards;
+}
+@keyframes pl-pulse {
+  0% { box-shadow: 0 0 0 0 var(--accent-hover); background: color-mix(in srgb, var(--accent-hover) 35%, transparent); }
+  100% { box-shadow: 0 0 0 18px transparent; background: transparent; }
+}
+.pl-drop-plus {
+  position: absolute;
+  left: 50%;
+  top: 35%;
+  transform: translateX(-50%);
+  color: var(--accent-hover);
+  font-size: 1.4rem;
+  font-weight: bold;
+  white-space: nowrap;
+  text-shadow: 0 0 10px var(--accent-hover);
+  animation: pl-plus 1s ease-out forwards;
+}
+@keyframes pl-plus {
+  0% { opacity: 0; transform: translate(-50%, 10px) scale(0.6); }
+  25% { opacity: 1; transform: translate(-50%, 0) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -40px) scale(1); }
+}
+
+
+/* ------------------------------------------------------------
+   FOR_YOU: feed-ul de recomandări
+   ------------------------------------------------------------ */
+.feed { display: flex; flex-direction: column; gap: 14px; }
+.feed-profile {
+  padding: 10px 12px;
+  border: 1px dashed color-mix(in srgb, var(--border) 60%, transparent);
+  background: color-mix(in srgb, var(--bg) 40%, transparent);
+  font-size: 0.78rem;
+}
+.feed-profile-line { margin: 0; color: var(--text); letter-spacing: 1px; }
+
+.feed-refresh {
+  padding: 2px 8px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: bold;
+  transition: background var(--ease), color var(--ease);
+}
+.feed-refresh:hover { background: var(--accent); color: var(--bg); }
+
+/* Cardurile din feed apar pe rând, unul după altul */
+.feed-card { animation: panel-in 0.35s ease backwards; }
+.feed-card:nth-child(2) { animation-delay: 0.04s; }
+.feed-card:nth-child(3) { animation-delay: 0.08s; }
+.feed-card:nth-child(4) { animation-delay: 0.12s; }
+.feed-card:nth-child(5) { animation-delay: 0.16s; }
+.feed-card:nth-child(6) { animation-delay: 0.2s; }
+.feed-card:nth-child(7) { animation-delay: 0.24s; }
+.feed-card:nth-child(8) { animation-delay: 0.28s; }
+
+/* Bara de potrivire ███░░ 87%, în culorile genului */
+.feed-match {
+  font-size: 0.68rem;
+  letter-spacing: -1px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.feed-motiv {
+  margin: 4px 0 0;
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* + QUEUE */
+.feed-add {
+  margin-top: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  transition: background var(--ease), color var(--ease);
+}
+.feed-add:hover { background: var(--accent); color: var(--bg); }
 
 
 /* ------------------------------------------------------------
@@ -1659,6 +1797,48 @@ button {
 @media (max-width: 700px) {
   .theme-toggle { position: static; margin-bottom: 12px; }
 }
+
+
+/* ------------------------------------------------------------
+   ETAPA 6: STĂRILE DE ÎNCĂRCARE ȘI DE EROARE
+   ------------------------------------------------------------ */
+.info {
+  margin: 0;
+  padding: 20px;
+  color: var(--muted);
+  letter-spacing: 1px;
+  text-align: center;
+}
+
+.error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--error-border);
+  border-radius: 8px;
+  background: var(--error-bg);
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+.error p { margin: 0; }
+.error code {
+  padding: 1px 6px;
+  border: 1px solid var(--error-border);
+  font-family: inherit;
+  font-weight: bold;
+}
+.error-retry {
+  padding: 4px 10px;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 0.75rem;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.error-retry:hover { background: var(--danger); color: var(--bg); }
 
 
 /* Dacă sistemul cere "mai puțină mișcare" (ex.: Windows cu efectele de animație

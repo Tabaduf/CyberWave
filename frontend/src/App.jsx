@@ -9,6 +9,10 @@
    bara de jos controlează piesa și volumul, iar PLAY GAME
    deschide jocul Tunnel Runner peste pagină. Discul se poate
    "scratch-ui" ca la DJ, iar tabul SYS_LOG arată statisticile.
+   Tabul FOR_YOU generează recomandări din statisticile de ascultare.
+   Etapa 6: datele nu mai sunt în cod. Vin de la un API (json-server,
+   din db.json) prin api.js, la deschiderea paginii, cu trei stări:
+   se încarcă / a reușit / a eșuat.
    ============================================================ */
 
 import { useState, useEffect } from "react";
@@ -20,46 +24,27 @@ import PlayerBar from "./components/PlayerBar.jsx";
 import JocTunel from "./components/JocTunel.jsx";
 import StatisticiLog from "./components/StatisticiLog.jsx";
 import useStatistici from "./hooks/useStatistici.js";
+import FeedList from "./components/FeedList.jsx";
+import { profilAscultare, genereazaFeed } from "./recomandari.js";
 import { porneste, opreste, seteazaVolum } from "./audio/sintetizator.js";
+import { fetchPiese, fetchSugestii, fetchPlaylisturi } from "./api.js";
 
 
 /* ------------------------------------------------------------
-   DATE INIȚIALE (deasupra funcției App)
-   Sunt doar valorile de PORNIRE, folosite o singură dată, la prima
-   randare. De aici înainte, ce se afișează vine din state.
-   Câmpuri: id, titlu, redata (bifat = PLAYED), format, gen, bpm,
-   durata (secunde), liked (doar la pornire), cover (null = fără copertă).
+   DATELE (Etapa 6)
+   Piesele, sugestiile și playlisturile nu mai sunt scrise aici:
+   stau în frontend/db.json și sunt cerute de la API la pornire
+   (vezi useEffect-ul de încărcare din App și fișierul api.js).
+   Câmpurile unei piese: id, titlu, redata (bifat = PLAYED), format,
+   gen, bpm, durata (secunde), liked (la pornire), cover (null = fără).
    ------------------------------------------------------------ */
-const PIESE_INITIALE = [
-  { id: 1, titlu: "MASTER_BOOT_RECORD - CHKDSK", redata: false, format: "flac", gen: "darksynth", bpm: 140, durata: 252, liked: true, cover: "/covers/cover-01.svg" },
-  { id: 2, titlu: "PERTURBATOR - FUTURE_CLUB", redata: true, format: "mp3", gen: "synthwave", bpm: 120, durata: 241, liked: true, cover: null },
-  { id: 3, titlu: "KEYGEN_CHURCH - TENEBRE", redata: false, format: "synth", gen: "darksynth", bpm: 100, durata: 318, liked: false, cover: null },
-];
-
-/* Sugestiile din panoul RANDOM (câte una pe gen) */
-const SUGESTII_INITIALE = [
-  { id: 101, titlu: "NEON_GHOST - NIGHT_DRIVE.EXE", redata: false, format: "mp3", gen: "synthwave", bpm: 110, durata: 214, liked: false, cover: null },
-  { id: 102, titlu: "VOID_RUNNER - KERNEL_PANIC", redata: false, format: "flac", gen: "industrial", bpm: 132, durata: 276, liked: false, cover: null },
-  { id: 103, titlu: "8BIT_ORACLE - SAVE_STATE", redata: false, format: "synth", gen: "chiptune", bpm: 150, durata: 168, liked: false, cover: null },
-  { id: 104, titlu: "MALL_ECHO - FOOD_COURT_94", redata: false, format: "mp3", gen: "vaporwave", bpm: 85, durata: 233, liked: false, cover: null },
-  { id: 105, titlu: "RAINY_TERMINAL - CACHE_MISS", redata: false, format: "flac", gen: "lo-fi", bpm: 72, durata: 189, liked: false, cover: null },
-  { id: 106, titlu: "SUBSTRATE - ORBITAL_DRIFT", redata: false, format: "flac", gen: "ambient", bpm: 60, durata: 402, liked: false, cover: null },
-  { id: 107, titlu: "AMEN_PROTOCOL - PACKET_STORM", redata: false, format: "mp3", gen: "drum&bass", bpm: 174, durata: 225, liked: false, cover: null },
-];
-
-/* Playlisturile de la pornire: fiecare ține doar id-urile pieselor lui */
-const PLAYLISTURI_INITIALE = [
-  { id: 1, nume: "NIGHT_DRIVE", gen: "synthwave", pieseIds: [101, 2, 104] },
-  { id: 2, nume: "BOOT_SEQUENCE", gen: "darksynth", pieseIds: [1, 3, 102] },
-  { id: 3, nume: "CODE_FOCUS", gen: "lo-fi", pieseIds: [105, 106] },
-  { id: 4, nume: "BOSS_FIGHT", gen: "chiptune", pieseIds: [103, 107] },
-];
 
 /* Meniurile de sus */
 const TABURI = [
   { id: "queue", text: "≡ QUEUE" },
   { id: "liked", text: "♥ LIKED_SONGS" },
   { id: "random", text: "⤨ RANDOM" },
+  { id: "foryou", text: "✦ FOR_YOU" },
   { id: "playlists", text: "▤ PLAYLISTS" },
   { id: "syslog", text: "▣ SYS_LOG" },
 ];
@@ -121,28 +106,81 @@ export default function App() {
      useState(valoareInițială) întoarce [valoarea, funcțiaDeSchimbare].
      Valoarea nu se modifică niciodată direct (fără push / splice / =):
      se apelează funcția cu o listă NOUĂ, iar React redesenează. */
-  const [piese, setPiese] = useState(PIESE_INITIALE);         // coada (lista principală)
-  const [sugestii, setSugestii] = useState(SUGESTII_INITIALE); // panoul RANDOM
+  // Etapa 6: listele pornesc goale; se umplu când răspunde API-ul
+  const [piese, setPiese] = useState([]);           // coada (lista principală)
+  const [sugestii, setSugestii] = useState([]);     // panoul RANDOM
+  const [loading, setLoading] = useState(true);     // se așteaptă răspunsul serverului
+  const [error, setError] = useState(null);         // mesajul erorii, dacă cererea a eșuat
+  const [incercare, setIncercare] = useState(0);    // crește la "RETRY" -> cererea se repetă
   const [tema, setTema] = useState(temaInitiala);             // funcția, fără (): rulează o singură dată
 
   const [tab, setTab] = useState("queue");          // panoul vizibil
   const [gen, setGen] = useState("all");            // filtrul de gen
-  const [coadaIds, setCoadaIds] = useState(PIESE_INITIALE.map((p) => p.id)); // ordinea pentru ⏮ / ⏭
-  const [curentId, setCurentId] = useState(1);      // piesa de pe disc (null = niciuna)
+  const [coadaIds, setCoadaIds] = useState([]);     // ordinea pentru ⏮ / ⏭
+  const [curentId, setCurentId] = useState(null);   // piesa de pe disc (null = niciuna)
   const [ruleaza, setRuleaza] = useState(false);    // PLAY sau PAUSE
   const [timp, setTimp] = useState(0);              // secunde derulate
   const [rewind, setRewind] = useState(false);      // animația REPEAT e în curs
   const [scratching, setScratching] = useState(false); // mâna e pe disc (mod DJ)
   const [discRidicat, setDiscRidicat] = useState(false); // discul e luat de pe platan
+  const [playlistTinta, setPlaylistTinta] = useState(null); // playlistul peste care e ținut discul
+  const [animatiePlaylist, setAnimatiePlaylist] = useState(null); // efectul "+1" după drop
+  const [pieseGenerate, setPieseGenerate] = useState([]); // piesele inventate pentru FOR_YOU
+  const [feed, setFeed] = useState([]); // feed-ul curent: [{ id, potrivire, motiv }]
 
   // Statisticile și jurnalul, din hook-ul nostru (hooks/useStatistici.js)
   const stats = useStatistici();
 
   // Id-urile pieselor apreciate (pornim de la câmpul liked din date)
-  const [likedIds, setLikedIds] = useState(
-    [...PIESE_INITIALE, ...SUGESTII_INITIALE].filter((p) => p.liked).map((p) => p.id)
-  );
-  const [playlisturi, setPlaylisturi] = useState(PLAYLISTURI_INITIALE);
+  // Id-urile pieselor apreciate (completate din câmpul liked, după încărcare)
+  const [likedIds, setLikedIds] = useState([]);
+  const [playlisturi, setPlaylisturi] = useState([]);
+
+  /* --- ETAPA 6: ÎNCĂRCAREA DATELOR DE LA API ---
+     Rulează după prima randare și din nou doar când se schimbă
+     "incercare" (butonul RETRY). Funcția dată lui useEffect nu poate fi
+     async, de aceea definim load() înăuntru și o apelăm imediat.
+     Promise.all trimite cele 3 cereri deodată și așteaptă toate răspunsurile;
+     dacă una eșuează, ajungem în catch. */
+  useEffect(() => {
+    let ignore = false; // devine true dacă App dispare înainte să sosească răspunsul
+
+    async function load() {
+      try {
+        const [pieseApi, sugestiiApi, playlisturiApi] = await Promise.all([
+          fetchPiese(),
+          fetchSugestii(),
+          fetchPlaylisturi(),
+        ]);
+        if (ignore) return;
+        setPiese(pieseApi);
+        setSugestii(sugestiiApi);
+        setPlaylisturi(playlisturiApi);
+        // liked din date -> lista de id-uri apreciate
+        setLikedIds([...pieseApi, ...sugestiiApi].filter((p) => p.liked).map((p) => p.id));
+        // Prima piesă din coadă ajunge pe disc (dacă există)
+        setCoadaIds(pieseApi.map((p) => p.id));
+        setCurentId(pieseApi.length > 0 ? pieseApi[0].id : null);
+      } catch (err) {
+        if (!ignore) setError(err.message);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    }
+
+    load();
+    // Curățarea efectului: răspunsurile care sosesc după aceasta sunt ignorate
+    return () => {
+      ignore = true;
+    };
+  }, [incercare]);
+
+  // RETRY: înapoi la starea de încărcare, apoi efectul de mai sus cere din nou datele
+  function handleReincearca() {
+    setLoading(true);
+    setError(null);
+    setIncercare((n) => n + 1);
+  }
   const [mesaj, setMesaj] = useState(null);         // notificarea de jos (toast)
   const [volum, setVolum] = useState(60);           // 0..100, din slider
   const [mut, setMut] = useState(false);            // sunet oprit din butonul difuzor
@@ -151,7 +189,10 @@ export default function App() {
   /* --- VALORI DERIVATE ---
      Se recalculează din state la fiecare randare, deci nu pot rămâne
      în urma datelor. Contorul din antet NU stă într-un useState separat. */
-  const toatePiesele = [...piese, ...sugestii];
+  const toatePiesele = [...piese, ...sugestii, ...pieseGenerate];
+
+  // Profilul muzical, recalculat din statistici și like-uri la fiecare randare
+  const profil = profilAscultare(stats.statistici, toatePiesele, likedIds);
   const piesaCurenta = toatePiesele.find((p) => p.id === curentId) ?? null;
   const inAsteptare = piese.filter((p) => !p.redata).length;
   const pieseApreciate = toatePiesele.filter((p) => likedIds.includes(p.id));
@@ -174,6 +215,7 @@ export default function App() {
     stats.logheaza("MARK", `${piesa.redata ? "PENDING" : "PLAYED"} ${piesa.titlu}`);
     setPiese((prev) => prev.map((p) => (p.id === id ? { ...p, redata: !p.redata } : p)));
     setSugestii((prev) => prev.map((p) => (p.id === id ? { ...p, redata: !p.redata } : p)));
+    setPieseGenerate((prev) => prev.map((p) => (p.id === id ? { ...p, redata: !p.redata } : p)));
   }
 
   // Ștergere: listă nouă fără piesa respectivă. Scoatem id-ul și din
@@ -184,6 +226,8 @@ export default function App() {
 
     setPiese((prev) => prev.filter((p) => p.id !== id));
     setSugestii((prev) => prev.filter((p) => p.id !== id));
+    setPieseGenerate((prev) => prev.filter((p) => p.id !== id));
+    setFeed((prev) => prev.filter((r) => r.id !== id));
     setLikedIds((prev) => prev.filter((x) => x !== id));
     setCoadaIds((prev) => prev.filter((x) => x !== id));
     setPlaylisturi((prev) =>
@@ -204,6 +248,40 @@ export default function App() {
   function marcheazaRedata(id) {
     setPiese((prev) => prev.map((p) => (p.id === id ? { ...p, redata: true } : p)));
     setSugestii((prev) => prev.map((p) => (p.id === id ? { ...p, redata: true } : p)));
+    setPieseGenerate((prev) => prev.map((p) => (p.id === id ? { ...p, redata: true } : p)));
+  }
+
+  /* --- FOR_YOU: feed generat din statistici --- */
+
+  // Feed nou: piese inventate pe gustul tău (vezi recomandari.js).
+  // Păstrăm doar piesele generate care sunt încă folosite undeva
+  // (liked, într-un playlist sau pe disc); restul se înlocuiesc cu cele noi.
+  function handleRegenereaza() {
+    const idMaxim = toatePiesele.reduce((max, p) => Math.max(max, p.id), 0);
+    const primulId = Math.max(1000, idMaxim + 1); // id-uri noi, ca nextId din Etapa 2
+    const rezultat = genereazaFeed(profil, Date.now() % 100000, primulId);
+
+    const folosita = (id) =>
+      likedIds.includes(id) || id === curentId || playlisturi.some((pl) => pl.pieseIds.includes(id));
+
+    setPieseGenerate((prev) => [...prev.filter((p) => folosita(p.id)), ...rezultat.map((r) => r.piesa)]);
+    setFeed(rezultat.map((r) => ({ id: r.piesa.id, potrivire: r.potrivire, motiv: r.motiv })));
+    stats.logheaza("FEED", `${rezultat.length} TRACKS GENERATED FOR YOU`);
+  }
+
+  // + QUEUE: piesa trece din feed în coadă (lista principală)
+  function handleAdaugaInCoada(piesa) {
+    setPiese((prev) => [...prev, { ...piesa }]);
+    setPieseGenerate((prev) => prev.filter((p) => p.id !== piesa.id));
+    setFeed((prev) => prev.filter((r) => r.id !== piesa.id));
+    arataMesaj(`ADDED TO QUEUE: ${piesa.titlu}`);
+    stats.logheaza("QUEUE", `+ ${piesa.titlu}`);
+  }
+
+  // Schimbarea tabului; prima deschidere a lui FOR_YOU generează feed-ul
+  function handleTab(id) {
+    setTab(id);
+    if (id === "foryou" && feed.length === 0) handleRegenereaza();
   }
 
   /* --- ETAPA 5: TEMA LUMINOASĂ / ÎNTUNECATĂ ---
@@ -371,6 +449,29 @@ export default function App() {
     treciLa(1, true);
   }
 
+  /* --- Disc lăsat peste un playlist ---
+     Piesa de pe disc intră în playlist (dacă nu era deja acolo),
+     cardul face o mică animație, iar muzica pornește din nou. */
+  function handleDropPlaylist(playlistId) {
+    const playlist = playlisturi.find((pl) => pl.id === playlistId);
+    const nou = !playlist.pieseIds.includes(curentId);
+
+    if (nou) {
+      setPlaylisturi((prev) =>
+        prev.map((pl) => (pl.id === playlistId ? { ...pl, pieseIds: [...pl.pieseIds, curentId] } : pl))
+      );
+      arataMesaj(`DROPPED INTO ${playlist.nume}`);
+      stats.logheaza("PLAYLIST", `+ ${playlist.nume} (DROP)`);
+    } else {
+      arataMesaj(`ALREADY IN ${playlist.nume}`);
+    }
+
+    // nonce = număr nou la fiecare drop, ca animația să pornească de fiecare dată
+    setAnimatiePlaylist({ id: playlistId, nou, nonce: Date.now() });
+    setPlaylistTinta(null);
+    setDiscRidicat(false);
+  }
+
   // Jocul: pornire / ieșire, ambele notate în jurnal
   function handleJoc() {
     stats.evenimentJoc(inJoc ? "iesire" : "start");
@@ -483,7 +584,9 @@ export default function App() {
 
         {/* Contorul: valori derivate din state, recalculate la fiecare randare */}
         <p className="app-count">
-          [SYS_MSG]: {piese.length} TRACKS FOUND. {inAsteptare} PENDING. {likedIds.length} LIKED.
+          {loading
+            ? "[SYS_MSG]: LINKING TO API..."
+            : `[SYS_MSG]: ${piese.length} TRACKS FOUND. ${inAsteptare} PENDING. ${likedIds.length} LIKED.`}
         </p>
       </header>
 
@@ -497,7 +600,7 @@ export default function App() {
               role="tab"
               aria-selected={tab === t.id}
               className={tab === t.id ? "tab activ" : "tab"}
-              onClick={() => setTab(t.id)}
+              onClick={() => handleTab(t.id)}
             >
               {t.text}
               {/* Numărul de piese apreciate, actualizat în timp real */}
@@ -520,6 +623,8 @@ export default function App() {
           onRidica={handleRidica}
           onRevenire={handleRevenire}
           onSpart={handleSpart}
+          onTintaPlaylist={setPlaylistTinta}
+          onDropPlaylist={handleDropPlaylist}
           playlisturi={playlisturi}
           onComutaPlaylist={(playlistId) => handleComutaPlaylist(playlistId, curentId)}
           onCreeazaPlaylist={(nume) => handleCreeazaPlaylist(nume, piesaCurenta)}
@@ -529,6 +634,26 @@ export default function App() {
             key={tab} face panoul nou la fiecare schimbare -> animația de intrare rulează din nou.
             {...actiuniCard} trimite toate câmpurile obiectului ca props separate. */}
         <section className="panel tab-panel" key={tab}>
+          {/* ETAPA 6: cele trei stări ale încărcării.
+              Cât se așteaptă: mesajul de încărcare. La eroare: ce s-a întâmplat
+              și ce e de făcut. Abia după succes se desenează conținutul tabului. */}
+          {loading && (
+            <p className="info">
+              [SYS]: LOADING TRACK DATABASE FROM API<span className="cursor">_</span>
+            </p>
+          )}
+          {error && (
+            <div className="error" role="alert">
+              <p>
+                [ERR]: COULD NOT LOAD DATA ({error}). IS THE API RUNNING? START IT WITH <code>npm run api</code> (PORT 3001), THEN RETRY.
+              </p>
+              <button type="button" className="error-retry" onClick={handleReincearca}>
+                ⟳ RETRY
+              </button>
+            </div>
+          )}
+          {!loading && !error && (
+            <>
           {tab === "queue" && (
             <>
               <h2>&gt;&gt; AUDIO_QUEUE</h2>
@@ -562,6 +687,26 @@ export default function App() {
             </>
           )}
 
+          {tab === "foryou" && (
+            <>
+              <h2>&gt;&gt; FOR_YOU</h2>
+              <FeedList
+                profil={profil}
+                // din id-uri -> piese, apoi filtrul de gen de sus
+                feed={feed
+                  .map((r) => ({ ...r, piesa: pieseGenerate.find((p) => p.id === r.id) }))
+                  .filter((r) => r.piesa && (gen === "all" || r.piesa.gen === gen))}
+                curentId={curentId}
+                ruleaza={ruleaza}
+                likedIds={likedIds}
+                onAlege={handleAlegePiesa}
+                onLike={handleLike}
+                onAdaugaInCoada={handleAdaugaInCoada}
+                onRegenereaza={handleRegenereaza}
+              />
+            </>
+          )}
+
           {tab === "syslog" && (
             <>
               <h2>&gt;&gt; SYS_LOG</h2>
@@ -581,8 +726,12 @@ export default function App() {
                 playlisturi={filtreaza(playlisturi)}
                 toatePiesele={toatePiesele}
                 curentId={curentId}
+                tintaId={playlistTinta}
+                animatie={animatiePlaylist}
                 onAlege={handleAlegePlaylist}
               />
+            </>
+          )}
             </>
           )}
         </section>

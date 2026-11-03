@@ -4,12 +4,14 @@
    plus primele piese din playlist (se actualizează în timp real
    când adaugi / scoți piese din player).
    Click pe un playlist -> prima lui piesă ajunge pe disc.
+   Disc de vinil ținut deasupra -> cardul se luminează (tintaId);
+   lăsat acolo -> piesa intră în playlist și cardul face "+1" (animatie).
    ============================================================ */
 
 /* Câte titluri arătăm pe card înainte de "+N MORE" */
 const MAX_TITLURI = 3;
 
-export default function PlaylistGrid({ playlisturi, toatePiesele, curentId, onAlege }) {
+export default function PlaylistGrid({ playlisturi, toatePiesele, curentId, tintaId, animatie, onAlege }) {
   if (playlisturi.length === 0) {
     return <p className="empty">[SYS_MSG]: NO PLAYLISTS IN THIS GENRE.</p>;
   }
@@ -18,12 +20,25 @@ export default function PlaylistGrid({ playlisturi, toatePiesele, curentId, onAl
     <ul className="playlist-grid">
       {playlisturi.map((pl) => {
         // Din id-uri obținem piesele, ca să le putem afișa titlurile
-        const pieseLista = pl.pieseIds.map((id) => toatePiesele.find((p) => p.id === id));
+        // filter(Boolean) scoate piesele care nu mai există (ex.: din feed-uri vechi)
+        const pieseLista = pl.pieseIds.map((id) => toatePiesele.find((p) => p.id === id)).filter(Boolean);
         const rest = pieseLista.length - MAX_TITLURI;
 
         return (
           // data-gen dă cardului culorile genului playlistului
-          <li key={pl.id} className="playlist-card" data-gen={pl.gen}>
+          // data-playlist-id: după el găsește discul ținut în mână cardul de sub mouse
+          <li
+            key={pl.id}
+            className={pl.id === tintaId ? "playlist-card tinta" : "playlist-card"}
+            data-gen={pl.gen}
+            data-playlist-id={pl.id}
+          >
+            {/* Efectul de "+1" după drop. key nou la fiecare drop = animația pornește din nou */}
+            {animatie && animatie.id === pl.id && (
+              <span key={animatie.nonce} className="pl-drop-fx" aria-hidden="true">
+                <span className="pl-drop-plus">{animatie.nou ? "+1" : "✓ ALREADY HERE"}</span>
+              </span>
+            )}
             <button type="button" className="playlist-btn" onClick={() => onAlege(pl)}>
               <span className="playlist-cover">
                 <span className="playlist-initiale">{pl.nume.slice(0, 2)}</span>

@@ -1,0 +1,24 @@
+{
+  "piese": [
+    { "id": 1, "titlu": "MASTER_BOOT_RECORD - CHKDSK", "redata": false, "format": "flac", "gen": "darksynth", "bpm": 140, "durata": 252, "liked": true, "cover": "/covers/cover-01.svg" },
+    { "id": 2, "titlu": "PERTURBATOR - FUTURE_CLUB", "redata": true, "format": "mp3", "gen": "synthwave", "bpm": 120, "durata": 241, "liked": true, "cover": null },
+    { "id": 3, "titlu": "KEYGEN_CHURCH - TENEBRE", "redata": false, "format": "synth", "gen": "darksynth", "bpm": 100, "durata": 318, "liked": false, "cover": null },
+    { "id": 4, "titlu": "PIXEL_SAINT - LAST_LOGIN", "redata": true, "format": "synth", "gen": "chiptune", "bpm": 150, "durata": 196, "liked": false, "cover": null },
+    { "id": 5, "titlu": "TAPE_LOOP_DEPT - SUNDAY_PATCH", "redata": false, "format": "mp3", "gen": "lo-fi", "bpm": 78, "durata": 207, "liked": true, "cover": null }
+  ],
+  "sugestii": [
+    { "id": 101, "titlu": "NEON_GHOST - NIGHT_DRIVE.EXE", "redata": false, "format": "mp3", "gen": "synthwave", "bpm": 110, "durata": 214, "liked": false, "cover": null },
+    { "id": 102, "titlu": "VOID_RUNNER - KERNEL_PANIC", "redata": false, "format": "flac", "gen": "industrial", "bpm": 132, "durata": 276, "liked": false, "cover": null },
+    { "id": 103, "titlu": "8BIT_ORACLE - SAVE_STATE", "redata": false, "format": "synth", "gen": "chiptune", "bpm": 150, "durata": 168, "liked": false, "cover": null },
+    { "id": 104, "titlu": "MALL_ECHO - FOOD_COURT_94", "redata": false, "format": "mp3", "gen": "vaporwave", "bpm": 85, "durata": 233, "liked": false, "cover": null },
+    { "id": 105, "titlu": "RAINY_TERMINAL - CACHE_MISS", "redata": false, "format": "flac", "gen": "lo-fi", "bpm": 72, "durata": 189, "liked": false, "cover": null },
+    { "id": 106, "titlu": "SUBSTRATE - ORBITAL_DRIFT", "redata": false, "format": "flac", "gen": "ambient", "bpm": 60, "durata": 402, "liked": false, "cover": null },
+    { "id": 107, "titlu": "AMEN_PROTOCOL - PACKET_STORM", "redata": false, "format": "mp3", "gen": "drum&bass", "bpm": 174, "durata": 225, "liked": false, "cover": null }
+  ],
+  "playlisturi": [
+    { "id": 1, "nume": "NIGHT_DRIVE", "gen": "synthwave", "pieseIds": [101, 2, 104] },
+    { "id": 2, "nume": "BOOT_SEQUENCE", "gen": "darksynth", "pieseIds": [1, 3, 102] },
+    { "id": 3, "nume": "CODE_FOCUS", "gen": "lo-fi", "pieseIds": [105, 106, 5] },
+    { "id": 4, "nume": "BOSS_FIGHT", "gen": "chiptune", "pieseIds": [103, 107, 4] }
+  ]
+}
