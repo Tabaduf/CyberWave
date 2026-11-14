@@ -17,10 +17,11 @@ export default function MeniuPlaylist({ playlisturi, piesaId, onComuta, onCreeaz
   // De câte playlisturi aparține piesa (apare pe buton)
   const inCate = playlisturi.filter((pl) => pl.pieseIds.includes(piesaId)).length;
 
-  // Trimiterea formularului: Enter în câmp sau click pe CREATE
-  function laCreare(e) {
+  // Trimiterea formularului: Enter în câmp sau click pe CREATE.
+  // onCreeaza salvează playlistul pe server (Etapa 7), deci așteptăm răspunsul.
+  async function laCreare(e) {
     e.preventDefault(); // altfel browserul reîncarcă pagina
-    if (onCreeaza(numeNou)) {
+    if (await onCreeaza(numeNou)) {
       setNumeNou("");
       setDeschis(false);
     }

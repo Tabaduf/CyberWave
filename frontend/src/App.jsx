@@ -13,6 +13,9 @@
    Etapa 6: datele nu mai sunt în cod. Vin de la un API (json-server,
    din db.json) prin api.js, la deschiderea paginii, cu trei stări:
    se încarcă / a reușit / a eșuat.
+   Etapa 7: formularul adaugă piese noi, iar bifarea, ștergerea,
+   like-urile și playlisturile se salvează pe server. Regula:
+   ÎNTÂI serverul, APOI state-ul (pe ecran ajunge doar ce s-a salvat).
    ============================================================ */
 
 import { useState, useEffect } from "react";
@@ -27,7 +30,19 @@ import useStatistici from "./hooks/useStatistici.js";
 import FeedList from "./components/FeedList.jsx";
 import { profilAscultare, genereazaFeed } from "./recomandari.js";
 import { porneste, opreste, seteazaVolum } from "./audio/sintetizator.js";
-import { fetchPiese, fetchSugestii, fetchPlaylisturi } from "./api.js";
+import PiesaForm from "./components/PiesaForm.jsx";
+import {
+  fetchPiese,
+  fetchSugestii,
+  fetchPlaylisturi,
+  createPiesa,
+  updatePiesa,
+  deletePiesa,
+  updateSugestie,
+  deleteSugestie,
+  createPlaylist,
+  updatePlaylist,
+} from "./api.js";
 
 
 /* ------------------------------------------------------------
@@ -162,7 +177,7 @@ export default function App() {
         setCoadaIds(pieseApi.map((p) => p.id));
         setCurentId(pieseApi.length > 0 ? pieseApi[0].id : null);
       } catch (err) {
-        if (!ignore) setError(err.message);
+        if (!ignore) setError(`COULD NOT LOAD DATA (${err.message})`);
       } finally {
         if (!ignore) setLoading(false);
       }
@@ -201,54 +216,109 @@ export default function App() {
   const filtreaza = (lista) => lista.filter((p) => gen === "all" || p.gen === gen);
 
   /* ------------------------------------------------------------
-     ETAPA 5: BIFARE ȘI ȘTERGERE
-     Prefixul handle = funcție care tratează o acțiune a utilizatorului.
-     Forma cu funcție setPiese((prev) => ...) primește mereu cea mai
-     recentă valoare a listei.
-     O piesă e fie în coadă, fie în sugestii: aplicăm aceeași schimbare
-     pe ambele liste, iar cea care nu conține id-ul rămâne neschimbată.
+     ETAPA 7: SALVAREA PE SERVER
+     O piesă poate sta în 3 locuri: coada (/piese), sugestiile
+     (/sugestii) sau feed-ul FOR_YOU (generat local, nu e pe server).
+     resursaPiesei spune unde e, ca să știm ce cerere trimitem.
      ------------------------------------------------------------ */
-
-  // Bifat <-> nebifat: listă nouă, obiect nou doar pentru piesa schimbată
-  function handleToggleRedata(id) {
-    const piesa = toatePiesele.find((p) => p.id === id);
-    stats.logheaza("MARK", `${piesa.redata ? "PENDING" : "PLAYED"} ${piesa.titlu}`);
-    setPiese((prev) => prev.map((p) => (p.id === id ? { ...p, redata: !p.redata } : p)));
-    setSugestii((prev) => prev.map((p) => (p.id === id ? { ...p, redata: !p.redata } : p)));
-    setPieseGenerate((prev) => prev.map((p) => (p.id === id ? { ...p, redata: !p.redata } : p)));
+  function resursaPiesei(id) {
+    if (piese.some((p) => p.id === id)) return "piese";
+    if (sugestii.some((p) => p.id === id)) return "sugestii";
+    return null; // piesă generată în FOR_YOU: modificările rămân locale
   }
 
-  // Ștergere: listă nouă fără piesa respectivă. Scoatem id-ul și din
-  // liked, din playlisturi și din ordinea de redare, ca să nu rămână
-  // trimiteri către o piesă care nu mai există.
-  function handleDelete(id) {
+  // PATCH pe resursa potrivită; întoarce piesa așa cum a salvat-o serverul
+  function salveazaPiesa(resursa, id, schimbari) {
+    return resursa === "piese" ? updatePiesa(id, schimbari) : updateSugestie(id, schimbari);
+  }
+
+  // Pune în listă obiectul ÎNTORS DE SERVER (nu o copie făcută local)
+  function inlocuiestePiesa(resursa, actualizata) {
+    const inlocuieste = (prev) => prev.map((p) => (p.id === actualizata.id ? actualizata : p));
+    if (resursa === "piese") setPiese(inlocuieste);
+    else if (resursa === "sugestii") setSugestii(inlocuieste);
+    else setPieseGenerate(inlocuieste);
+  }
+
+  // Eroare la o salvare: mesajul apare deasupra listei, iar lista rămâne pe ecran
+  function eroareSalvare(err) {
+    setError(`COULD NOT SAVE CHANGES (${err.message})`);
+  }
+
+  // Adăugarea din formular. Fără try: eroarea ajunge înapoi în PiesaForm,
+  // care o afișează lângă câmpuri și păstrează textul scris.
+  async function handleAdd(piesaNoua) {
+    const creata = await createPiesa(piesaNoua); // serverul întoarce piesa CU id
+    setPiese((prev) => [...prev, creata]);
+    setCoadaIds((prev) => [...prev, creata.id]);
+    if (curentId === null) setCurentId(creata.id); // coada era goală: piesa nouă ajunge pe disc
+    setError(null);
+    arataMesaj(`ADDED: ${creata.titlu}`);
+    stats.logheaza("ADD", creata.titlu);
+  }
+
+  // Bifat <-> nebifat: PATCH doar cu câmpul schimbat, apoi piesa întoarsă de server
+  async function handleToggleRedata(id) {
     const piesa = toatePiesele.find((p) => p.id === id);
-
-    setPiese((prev) => prev.filter((p) => p.id !== id));
-    setSugestii((prev) => prev.filter((p) => p.id !== id));
-    setPieseGenerate((prev) => prev.filter((p) => p.id !== id));
-    setFeed((prev) => prev.filter((r) => r.id !== id));
-    setLikedIds((prev) => prev.filter((x) => x !== id));
-    setCoadaIds((prev) => prev.filter((x) => x !== id));
-    setPlaylisturi((prev) =>
-      prev.map((pl) => ({ ...pl, pieseIds: pl.pieseIds.filter((x) => x !== id) }))
-    );
-
-    // Dacă ștergem piesa de pe disc, oprim player-ul
-    if (id === curentId) {
-      setCurentId(null);
-      setRuleaza(false);
-      setTimp(0);
+    const resursa = resursaPiesei(id);
+    try {
+      const actualizata = resursa
+        ? await salveazaPiesa(resursa, id, { redata: !piesa.redata })
+        : { ...piesa, redata: !piesa.redata }; // piesă din FOR_YOU: doar local
+      inlocuiestePiesa(resursa, actualizata);
+      stats.logheaza("MARK", `${actualizata.redata ? "PLAYED" : "PENDING"} ${piesa.titlu}`);
+    } catch (err) {
+      eroareSalvare(err);
     }
-    arataMesaj(`DELETED ${piesa.titlu}`);
-    stats.logheaza("DELETE", piesa.titlu);
   }
 
-  // Marchează piesa ca redată (la finalul ei), fără să o comute înapoi
-  function marcheazaRedata(id) {
-    setPiese((prev) => prev.map((p) => (p.id === id ? { ...p, redata: true } : p)));
-    setSugestii((prev) => prev.map((p) => (p.id === id ? { ...p, redata: true } : p)));
-    setPieseGenerate((prev) => prev.map((p) => (p.id === id ? { ...p, redata: true } : p)));
+  // Ștergere: DELETE pe server, apoi scoatem piesa și din playlisturile care o conțin
+  // (și ele salvate pe server), din liked și din ordinea de redare.
+  async function handleDelete(id) {
+    const piesa = toatePiesele.find((p) => p.id === id);
+    const resursa = resursaPiesei(id);
+    try {
+      if (resursa === "piese") await deletePiesa(id);
+      if (resursa === "sugestii") await deleteSugestie(id);
+
+      // Playlisturile care conțineau piesa: PATCH cu lista fără ea
+      const afectate = playlisturi.filter((pl) => pl.pieseIds.includes(id));
+      const salvate = await Promise.all(
+        afectate.map((pl) => updatePlaylist(pl.id, { pieseIds: pl.pieseIds.filter((x) => x !== id) }))
+      );
+      setPlaylisturi((prev) => prev.map((pl) => salvate.find((s) => s.id === pl.id) ?? pl));
+
+      setPiese((prev) => prev.filter((p) => p.id !== id));
+      setSugestii((prev) => prev.filter((p) => p.id !== id));
+      setPieseGenerate((prev) => prev.filter((p) => p.id !== id));
+      setFeed((prev) => prev.filter((r) => r.id !== id));
+      setLikedIds((prev) => prev.filter((x) => x !== id));
+      setCoadaIds((prev) => prev.filter((x) => x !== id));
+
+      // Dacă ștergem piesa de pe disc, oprim player-ul
+      if (id === curentId) {
+        setCurentId(null);
+        setRuleaza(false);
+        setTimp(0);
+      }
+      arataMesaj(`DELETED ${piesa.titlu}`);
+      stats.logheaza("DELETE", piesa.titlu);
+    } catch (err) {
+      eroareSalvare(err);
+    }
+  }
+
+  // Piesa s-a terminat: o marcăm PLAYED (și pe server), fără să o comutăm înapoi
+  async function marcheazaRedata(id) {
+    const piesa = toatePiesele.find((p) => p.id === id);
+    if (!piesa || piesa.redata) return;
+    const resursa = resursaPiesei(id);
+    try {
+      const actualizata = resursa ? await salveazaPiesa(resursa, id, { redata: true }) : { ...piesa, redata: true };
+      inlocuiestePiesa(resursa, actualizata);
+    } catch (err) {
+      eroareSalvare(err);
+    }
   }
 
   /* --- FOR_YOU: feed generat din statistici --- */
@@ -269,13 +339,35 @@ export default function App() {
     stats.logheaza("FEED", `${rezultat.length} TRACKS GENERATED FOR YOU`);
   }
 
-  // + QUEUE: piesa trece din feed în coadă (lista principală)
-  function handleAdaugaInCoada(piesa) {
-    setPiese((prev) => [...prev, { ...piesa }]);
-    setPieseGenerate((prev) => prev.filter((p) => p.id !== piesa.id));
-    setFeed((prev) => prev.filter((r) => r.id !== piesa.id));
-    arataMesaj(`ADDED TO QUEUE: ${piesa.titlu}`);
-    stats.logheaza("QUEUE", `+ ${piesa.titlu}`);
+  // + QUEUE: piesa trece din feed în coadă, deci acum se salvează pe server.
+  // Serverul îi dă un id nou, așa că înlocuim id-ul vechi (cel generat local)
+  // peste tot unde apărea: liked, disc, ordinea de redare și playlisturi.
+  async function handleAdaugaInCoada(piesa) {
+    const idVechi = piesa.id;
+    const date = { ...piesa, liked: likedIds.includes(idVechi) };
+    delete date.id; // POST fără id
+    try {
+      const creata = await createPiesa(date);
+      const schimbaId = (id) => (id === idVechi ? creata.id : id);
+
+      const afectate = playlisturi.filter((pl) => pl.pieseIds.includes(idVechi));
+      const salvate = await Promise.all(
+        afectate.map((pl) => updatePlaylist(pl.id, { pieseIds: pl.pieseIds.map(schimbaId) }))
+      );
+      setPlaylisturi((prev) => prev.map((pl) => salvate.find((s) => s.id === pl.id) ?? pl));
+
+      setPiese((prev) => [...prev, creata]);
+      setPieseGenerate((prev) => prev.filter((p) => p.id !== idVechi));
+      setFeed((prev) => prev.filter((r) => r.id !== idVechi));
+      setLikedIds((prev) => prev.map(schimbaId));
+      setCoadaIds((prev) => prev.map(schimbaId));
+      if (curentId === idVechi) setCurentId(creata.id);
+
+      arataMesaj(`ADDED TO QUEUE: ${creata.titlu}`);
+      stats.logheaza("QUEUE", `+ ${creata.titlu}`);
+    } catch (err) {
+      eroareSalvare(err);
+    }
   }
 
   // Schimbarea tabului; prima deschidere a lui FOR_YOU generează feed-ul
@@ -361,50 +453,66 @@ export default function App() {
     setMesaj({ id: Date.now(), text }); // id nou -> animația pornește din nou
   }
 
-  // ♥: dacă piesa e apreciată o scoatem, altfel o adăugăm
-  function handleLike(piesa) {
+  // ♥: dacă piesa e apreciată o scoatem, altfel o adăugăm (câmpul liked, salvat pe server)
+  async function handleLike(piesa) {
     const eraApreciata = likedIds.includes(piesa.id);
-    setLikedIds((prev) =>
-      eraApreciata ? prev.filter((id) => id !== piesa.id) : [...prev, piesa.id]
-    );
-    arataMesaj(eraApreciata ? "♡ REMOVED FROM LIKED_SONGS" : "♥ ADDED TO LIKED_SONGS");
-    stats.logheaza(eraApreciata ? "UNLIKE" : "LIKE", piesa.titlu);
+    const resursa = resursaPiesei(piesa.id);
+    try {
+      if (resursa) {
+        const actualizata = await salveazaPiesa(resursa, piesa.id, { liked: !eraApreciata });
+        inlocuiestePiesa(resursa, actualizata);
+      }
+      setLikedIds((prev) =>
+        eraApreciata ? prev.filter((id) => id !== piesa.id) : [...prev, piesa.id]
+      );
+      arataMesaj(eraApreciata ? "♡ REMOVED FROM LIKED_SONGS" : "♥ ADDED TO LIKED_SONGS");
+      stats.logheaza(eraApreciata ? "UNLIKE" : "LIKE", piesa.titlu);
+    } catch (err) {
+      eroareSalvare(err);
+    }
   }
 
-  // Adaugă piesa în playlist sau o scoate, dacă era deja acolo
-  function handleComutaPlaylist(playlistId, piesaId) {
+  // Pune în listă playlistul întors de server
+  function inlocuiestePlaylist(salvat) {
+    setPlaylisturi((prev) => prev.map((pl) => (pl.id === salvat.id ? salvat : pl)));
+  }
+
+  // Adaugă piesa în playlist sau o scoate, dacă era deja acolo (PATCH pe playlist)
+  async function handleComutaPlaylist(playlistId, piesaId) {
     const playlist = playlisturi.find((pl) => pl.id === playlistId);
     const exista = playlist.pieseIds.includes(piesaId);
-
-    setPlaylisturi((prev) =>
-      prev.map((pl) => {
-        if (pl.id !== playlistId) return pl; // celelalte rămân neschimbate
-        const pieseIds = exista
-          ? pl.pieseIds.filter((id) => id !== piesaId)
-          : [...pl.pieseIds, piesaId];
-        return { ...pl, pieseIds }; // copie a playlistului, cu lista nouă
-      })
-    );
-    arataMesaj(exista ? `REMOVED FROM ${playlist.nume}` : `ADDED TO ${playlist.nume}`);
-    stats.logheaza("PLAYLIST", `${exista ? "-" : "+"} ${playlist.nume}`);
+    const pieseIds = exista
+      ? playlist.pieseIds.filter((id) => id !== piesaId)
+      : [...playlist.pieseIds, piesaId];
+    try {
+      inlocuiestePlaylist(await updatePlaylist(playlistId, { pieseIds }));
+      arataMesaj(exista ? `REMOVED FROM ${playlist.nume}` : `ADDED TO ${playlist.nume}`);
+      stats.logheaza("PLAYLIST", `${exista ? "-" : "+"} ${playlist.nume}`);
+    } catch (err) {
+      eroareSalvare(err);
+    }
   }
 
-  // Playlist nou, care pornește cu piesa curentă.
+  // Playlist nou, care pornește cu piesa curentă (POST, id-ul îl dă serverul).
   // Validare ca în Etapa 2: numele nu poate fi gol și nici repetat.
-  function handleCreeazaPlaylist(numeBrut, piesa) {
+  // Întoarce true / false, ca meniul să știe dacă să se închidă.
+  async function handleCreeazaPlaylist(numeBrut, piesa) {
     const nume = numeBrut.trim().toUpperCase().replace(/\s+/g, "_"); // "chill mix" -> "CHILL_MIX"
     if (nume === "") return false;
     if (playlisturi.some((pl) => pl.nume === nume)) {
       arataMesaj(`${nume} ALREADY EXISTS`);
       return false;
     }
-
-    // id nou = cel mai mare id + 1 (aceeași idee ca nextId din Etapa 2)
-    const id = playlisturi.reduce((max, pl) => Math.max(max, pl.id), 0) + 1;
-    setPlaylisturi((prev) => [...prev, { id, nume, gen: piesa.gen, pieseIds: [piesa.id] }]);
-    arataMesaj(`CREATED ${nume}`);
-    stats.logheaza("PLAYLIST", `NEW ${nume}`);
-    return true;
+    try {
+      const creat = await createPlaylist({ nume, gen: piesa.gen, pieseIds: [piesa.id] });
+      setPlaylisturi((prev) => [...prev, creat]);
+      arataMesaj(`CREATED ${nume}`);
+      stats.logheaza("PLAYLIST", `NEW ${nume}`);
+      return true;
+    } catch (err) {
+      eroareSalvare(err);
+      return false;
+    }
   }
 
   // Play / pauză, cu rând în jurnal
@@ -452,16 +560,18 @@ export default function App() {
   /* --- Disc lăsat peste un playlist ---
      Piesa de pe disc intră în playlist (dacă nu era deja acolo),
      cardul face o mică animație, iar muzica pornește din nou. */
-  function handleDropPlaylist(playlistId) {
+  async function handleDropPlaylist(playlistId) {
     const playlist = playlisturi.find((pl) => pl.id === playlistId);
     const nou = !playlist.pieseIds.includes(curentId);
 
     if (nou) {
-      setPlaylisturi((prev) =>
-        prev.map((pl) => (pl.id === playlistId ? { ...pl, pieseIds: [...pl.pieseIds, curentId] } : pl))
-      );
-      arataMesaj(`DROPPED INTO ${playlist.nume}`);
-      stats.logheaza("PLAYLIST", `+ ${playlist.nume} (DROP)`);
+      try {
+        inlocuiestePlaylist(await updatePlaylist(playlistId, { pieseIds: [...playlist.pieseIds, curentId] }));
+        arataMesaj(`DROPPED INTO ${playlist.nume}`);
+        stats.logheaza("PLAYLIST", `+ ${playlist.nume} (DROP)`);
+      } catch (err) {
+        eroareSalvare(err);
+      }
     } else {
       arataMesaj(`ALREADY IN ${playlist.nume}`);
     }
@@ -612,8 +722,15 @@ export default function App() {
       </nav>
 
       <main className="container">
-        {/* Stânga: discul și comenzile ({...comenziPlayer} = aceleași props ca bara de jos) */}
-        <Player
+        {/* Stânga: formularul (Etapa 7), apoi discul și comenzile */}
+        <div className="col-stanga">
+          <section className="panel">
+            <h2>&gt;&gt; INPUT_NEW_TRACK</h2>
+            <PiesaForm onAdd={handleAdd} />
+          </section>
+
+          {/* {...comenziPlayer} = aceleași props ca bara de jos */}
+          <Player
           {...comenziPlayer}
           scratching={scratching}
           discRidicat={discRidicat}
@@ -628,31 +745,38 @@ export default function App() {
           playlisturi={playlisturi}
           onComutaPlaylist={(playlistId) => handleComutaPlaylist(playlistId, curentId)}
           onCreeazaPlaylist={(nume) => handleCreeazaPlaylist(nume, piesaCurenta)}
-        />
+          />
+        </div>
 
         {/* Dreapta: se desenează doar panoul tabului ales (randare condiționată).
             key={tab} face panoul nou la fiecare schimbare -> animația de intrare rulează din nou.
             {...actiuniCard} trimite toate câmpurile obiectului ca props separate. */}
         <section className="panel tab-panel" key={tab}>
-          {/* ETAPA 6: cele trei stări ale încărcării.
+          {/* ETAPA 6-7: stările încărcării.
               Cât se așteaptă: mesajul de încărcare. La eroare: ce s-a întâmplat
-              și ce e de făcut. Abia după succes se desenează conținutul tabului. */}
+              și ce e de făcut. Etapa 7: lista se desenează după încărcare chiar
+              dacă există o eroare, ca o salvare eșuată să nu ascundă lista. */}
           {loading && (
-            <p className="info">
+            <p className="info" data-testid="loading">
               [SYS]: LOADING TRACK DATABASE FROM API<span className="cursor">_</span>
             </p>
           )}
           {error && (
-            <div className="error" role="alert">
+            <div className="error" role="alert" data-testid="error">
               <p>
-                [ERR]: COULD NOT LOAD DATA ({error}). IS THE API RUNNING? START IT WITH <code>npm run api</code> (PORT 3001), THEN RETRY.
+                [ERR]: {error}. IS THE API RUNNING? START IT WITH <code>npm run api</code> (PORT 3001), THEN RETRY.
               </p>
-              <button type="button" className="error-retry" onClick={handleReincearca}>
-                ⟳ RETRY
-              </button>
+              <div className="error-actions">
+                <button type="button" className="error-retry" onClick={handleReincearca}>
+                  ⟳ RETRY
+                </button>
+                <button type="button" className="error-retry" onClick={() => setError(null)} aria-label="Închide mesajul">
+                  ✕
+                </button>
+              </div>
             </div>
           )}
-          {!loading && !error && (
+          {!loading && (
             <>
           {tab === "queue" && (
             <>

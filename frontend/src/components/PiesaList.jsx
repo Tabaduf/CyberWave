@@ -22,7 +22,11 @@ export default function PiesaList({
 }) {
   // 1. Return timpuriu: dacă nu există piese, afișăm mesajul și ne oprim aici
   if (piese.length === 0) {
-    return <p className="empty">{mesajGol}</p>;
+    return (
+      <p className="empty" data-testid="empty">
+        {mesajGol}
+      </p>
+    );
   }
 
   // 2. Altfel, câte un card pentru fiecare piesă (map, ca în Etapa 2).

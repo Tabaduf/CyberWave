@@ -4,6 +4,7 @@
    genuri cu palete proprii, player cu disc de vinil,
    liked / random / playlists, like și adăugare în playlist.
    Etapa 5: tema luminoasă / întunecată, checkbox și ștergere în card.
+   Etapa 7: formularul de adăugare (stilurile din mockup-ul Etapei 1).
    ============================================================ */
 
 * {
@@ -381,7 +382,8 @@ button {
   margin: 26px auto;
   padding: 0 16px;
   display: grid;
-  grid-template-columns: minmax(280px, 340px) 1fr;
+  /* Etapa 7: formularul (și player-ul) în stânga, lista în dreapta, ca în mockup-ul din Etapa 1 */
+  grid-template-columns: minmax(280px, 1fr) 2fr;
   gap: 20px;
   align-items: start;
 }
@@ -1839,6 +1841,78 @@ button {
   white-space: nowrap;
 }
 .error-retry:hover { background: var(--danger); color: var(--bg); }
+
+
+/* ------------------------------------------------------------
+   ETAPA 7: FORMULARUL DE ADĂUGARE
+   (stilurile formularului din mockup-ul Etapei 1, pe variabilele temei)
+   ------------------------------------------------------------ */
+
+/* Coloana din stânga: formularul deasupra player-ului */
+.col-stanga {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+.col-stanga .player { position: static; } /* nu mai stă lipit: coloana e mai înaltă acum */
+
+.item-form { display: flex; flex-direction: column; gap: 14px; }
+.item-form label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.85rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.item-form input,
+.item-form select {
+  margin-top: 5px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+.item-form input:focus,
+.item-form select:focus { outline: none; box-shadow: 0 0 8px var(--border); }
+.item-form select option { background: var(--surface); color: var(--text); }
+
+/* Genul și BPM-ul pe același rând */
+.form-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; }
+
+.item-form button[type="submit"] {
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: var(--text);
+  color: var(--bg);
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: background var(--ease), color var(--ease), box-shadow var(--ease);
+}
+.item-form button[type="submit"]:hover:not(:disabled) {
+  background: var(--bg);
+  color: var(--accent-hover);
+  box-shadow: 0 0 10px var(--accent-hover);
+}
+
+/* Etapa 7: buton dezactivat cât timp se trimite */
+.item-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Etapa 7: câmpul greșit, marcat prin aria-invalid */
+.item-form input[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+}
+
+/* Butoanele din mesajul de eroare al paginii (RETRY și ✕) */
+.error-actions { display: flex; gap: 6px; }
 
 
 /* Dacă sistemul cere "mai puțină mișcare" (ex.: Windows cu efectele de animație

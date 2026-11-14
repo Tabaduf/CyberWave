@@ -5,35 +5,76 @@
    schimbă, se modifică doar adresa de mai jos.
 
    Resursele din db.json (servite de json-server):
-     /piese        - coada principală
+     /piese        - coada principală (aici adaugă formularul)
      /sugestii     - piesele din panoul RANDOM
      /playlisturi  - playlisturile, cu id-urile pieselor lor
+
+   Metodele HTTP (Etapa 7):
+     GET    /piese      - citirea listei
+     POST   /piese      - adăugarea (fără id; id-ul îl dă serverul)
+     PATCH  /piese/3    - modificarea doar a câmpurilor trimise
+     DELETE /piese/3    - ștergerea
    ============================================================ */
 
 /* Adresa serverului vine din variabila de mediu VITE_API_URL
    (fișierul .env). ?? = "dacă lipsește, folosește valoarea din dreapta". */
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
-/* Cererea comună: GET pe o rută și răspunsul ca JSON.
-   fetch NU aruncă eroare la 404 sau 500 (aruncă doar când nu ajunge
-   deloc la server), de aceea verificăm noi res.ok la fiecare cerere. */
-async function cere(ruta) {
-  const res = await fetch(`${API_URL}/${ruta}`);
+/* Funcția comună: singurul loc cu fetch.
+   - ...options copiază ce primește (metoda, corpul cererii);
+   - antetul spune serverului că trimitem JSON;
+   - fetch NU aruncă eroare la 404 sau 500, deci verificăm noi res.ok;
+   - 204 No Content nu are corp: res.json() ar da "Unexpected end of JSON input". */
+async function request(path, options = {}) {
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...options.headers },
+  });
   if (!res.ok) {
-    throw new Error(`Eroare server: ${res.status} la /${ruta}`);
+    throw new Error(`Eroare server: ${res.status}`);
   }
-  return res.json();
+  return res.status === 204 ? null : res.json();
 }
 
-/* Câte o funcție pentru fiecare resursă (fetchTasks din ghid, pe tema proprie) */
+/* --- Coada (piese) --- */
 export function fetchPiese() {
-  return cere("piese");
+  return request("/piese");
 }
 
+export function createPiesa(piesa) {
+  return request("/piese", { method: "POST", body: JSON.stringify(piesa) });
+}
+
+export function updatePiesa(id, changes) {
+  return request(`/piese/${id}`, { method: "PATCH", body: JSON.stringify(changes) });
+}
+
+export function deletePiesa(id) {
+  return request(`/piese/${id}`, { method: "DELETE" });
+}
+
+/* --- Sugestiile (panoul RANDOM): se pot bifa, aprecia și șterge --- */
 export function fetchSugestii() {
-  return cere("sugestii");
+  return request("/sugestii");
 }
 
+export function updateSugestie(id, changes) {
+  return request(`/sugestii/${id}`, { method: "PATCH", body: JSON.stringify(changes) });
+}
+
+export function deleteSugestie(id) {
+  return request(`/sugestii/${id}`, { method: "DELETE" });
+}
+
+/* --- Playlisturile --- */
 export function fetchPlaylisturi() {
-  return cere("playlisturi");
+  return request("/playlisturi");
+}
+
+export function createPlaylist(playlist) {
+  return request("/playlisturi", { method: "POST", body: JSON.stringify(playlist) });
+}
+
+export function updatePlaylist(id, changes) {
+  return request(`/playlisturi/${id}`, { method: "PATCH", body: JSON.stringify(changes) });
 }

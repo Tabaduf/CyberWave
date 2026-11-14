@@ -7,6 +7,9 @@
      - checkbox / titlu   -> PENDING <-> PLAYED
      - ♥                  -> intră / iese din LIKED_SONGS
      - ✕ DELETE           -> șterge piesa
+   Etapa 7: atributele data-testid (item, item-title, item-toggle,
+   item-delete) sunt reperele pentru verificarea automată; nu schimbă
+   nici aspectul, nici comportamentul. data-id = id-ul piesei.
    ============================================================ */
 
 /* Traduce valoarea din date în textul afișat pe badge.
@@ -21,7 +24,7 @@ export default function PiesaCard({ piesa, peDisc, ruleaza, liked, onAlege, onLi
   if (peDisc) clase += " on-deck";
 
   return (
-    <li className={clase}>
+    <li className={clase} data-testid="item" data-id={piesa.id}>
       {/* Mini-disc cu coperta: buton care pune piesa pe disc.
           Se învârte doar cât piesa asta rulează. Fără copertă,
           eticheta din mijloc are culoarea genului (data-gen). */}
@@ -48,10 +51,11 @@ export default function PiesaCard({ piesa, peDisc, ruleaza, liked, onAlege, onLi
           type="checkbox"
           checked={piesa.redata}
           onChange={() => onToggle(piesa.id)}
+          data-testid="item-toggle"
         />
 
         <div className="card-details">
-          <h3>{piesa.titlu}</h3>
+          <h3 data-testid="item-title">{piesa.titlu}</h3>
 
           <div className="card-meta">
             {/* Clasa se construiește din valoare: "flac" -> "badge-flac" (definită în App.css) */}
@@ -94,6 +98,7 @@ export default function PiesaCard({ piesa, peDisc, ruleaza, liked, onAlege, onLi
           className="btn-danger"
           onClick={() => onDelete(piesa.id)}
           aria-label={`Șterge ${piesa.titlu}`}
+          data-testid="item-delete"
         >
           ✕ DELETE
         </button>

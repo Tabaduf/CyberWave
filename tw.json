@@ -1,0 +1,6 @@
+{
+  "resource": "piese",
+  "title": "titlu",
+  "done": "redata",
+  "sample": { "format": "flac", "gen": "darksynth", "bpm": 128 }
+}
