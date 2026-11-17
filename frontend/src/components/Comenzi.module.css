@@ -1,0 +1,52 @@
+/* Comenzi: bara de progres (în Player și în bara de jos) */
+.progress {
+  position: relative;
+  height: 4px;
+  margin-top: 16px;
+  background: color-mix(in srgb, var(--border) 20%, transparent);
+  cursor: pointer;
+  transition: height var(--ease);
+}
+/* Zonă de click mai mare decât bara subțire */
+.progress::before {
+  content: "";
+  position: absolute;
+  inset: -8px 0;
+}
+.progress:hover { height: 6px; }
+
+.fill {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  background: var(--text);
+  box-shadow: 0 0 8px var(--text);
+  transition: width 0.3s linear;
+}
+.rewinding .fill { transition: width 0.9s cubic-bezier(0.3, 0, 0.2, 1); }
+
+/* Punctul de la capătul barei */
+.fill::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: var(--accent-hover);
+  box-shadow: 0 0 8px var(--accent-hover);
+}
+
+.time {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+/* Varianta compactă, din bara de jos */
+.row { display: flex; align-items: center; gap: 10px; width: 100%; }
+.row .progress { flex: 1; margin-top: 0; }
+.label { font-size: 0.68rem; color: var(--muted); min-width: 3.2em; text-align: center; }

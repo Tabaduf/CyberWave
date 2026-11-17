@@ -1,0 +1,96 @@
+/* StatisticiLog: panoul SYS_LOG, ca un raport de terminal */
+.syslog {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); /* două coloane când e loc */
+  gap: 14px;
+}
+.block {
+  padding: 10px 12px;
+  border: 1px dashed color-mix(in srgb, var(--border) 60%, transparent);
+  background: color-mix(in srgb, var(--bg) 40%, transparent);
+  font-size: 0.78rem;
+}
+.wide { grid-column: 1 / -1; } /* jurnalul ocupă toată lățimea */
+
+/* Linia de comandă de deasupra fiecărui bloc */
+.cmd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-weight: bold;
+}
+.empty { margin: 0; color: var(--muted); font-style: italic; }
+.accent { color: var(--accent-hover); font-weight: bold; }
+
+/* Perechi CHEIE ........ valoare */
+.info {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  margin: 0;
+}
+.info dt { color: var(--muted); }
+.info dd { margin: 0; text-align: right; }
+
+/* Barele de gen: nume | ████░░░ | % ; culorile vin din data-gen */
+.bars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.bars li {
+  display: grid;
+  grid-template-columns: 7.5em 1fr 3em;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+.barName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.7rem; }
+.barAscii { letter-spacing: -1px; white-space: nowrap; overflow: hidden; text-shadow: 0 0 6px var(--border); }
+.barRest { color: var(--muted); opacity: 0.4; text-shadow: none; }
+.barPct { text-align: right; color: var(--muted); }
+
+/* Topul pieselor */
+.top { margin: 0; padding-left: 1.6em; display: flex; flex-direction: column; gap: 3px; }
+.top li { display: flex; justify-content: space-between; gap: 10px; }
+.topTitle { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.topTime { color: var(--muted); flex-shrink: 0; }
+
+/* Jurnalul */
+.lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  font-size: 0.74rem;
+  line-height: 1.6;
+}
+.lines li {
+  display: grid;
+  grid-template-columns: auto 6.5em 1fr;
+  gap: 10px;
+  animation: apare 0.25s ease; /* rândurile noi apar lin */
+}
+.ora { color: var(--muted); }
+.tip { font-weight: bold; color: var(--accent); }
+.text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* Câteva tipuri au culori proprii (clasa vine din tipul rândului: "log-crash" ...) */
+.log-crash .tip, .log-delete .tip, .log-shatter .tip { color: var(--danger); }
+.log-like .tip, .log-blast .tip { color: var(--accent-hover); }
+.log-sys .tip { color: var(--text); }
+
+.lines .logCursor { display: block; color: var(--accent); }
+
+/* Butonul $ clear */
+.clear {
+  padding: 2px 8px;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 0.7rem;
+  font-weight: bold;
+}
+.clear:hover { background: var(--danger); color: var(--bg); }
+
+@keyframes apare {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

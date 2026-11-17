@@ -1,0 +1,89 @@
+/* PiesaCard: un card din listă. Folosit și de FeedList (aceleași carduri). */
+.card {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  transition: background var(--ease), transform var(--ease), box-shadow var(--ease), border-color var(--ease);
+}
+.card:hover,
+.card:focus-within {
+  background: color-mix(in srgb, var(--text) 15%, transparent);
+  transform: translateX(4px);
+  box-shadow: -4px 0 0 var(--accent-hover), 0 0 12px color-mix(in srgb, var(--border) 25%, transparent);
+}
+
+/* Piesa de pe disc: chenar luminos */
+.onDeck {
+  border-color: var(--accent-hover);
+  box-shadow: inset 4px 0 0 var(--accent-hover), 0 0 14px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* Checkbox-ul + titlul + etichetele: ocupă spațiul din mijlocul cardului */
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Checkbox în stil terminal: pătrat cu chenar, umplut când e bifat */
+.main input[type="checkbox"] {
+  appearance: none; /* scoatem aspectul implicit al browserului */
+  flex-shrink: 0;
+  display: grid;
+  place-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  cursor: pointer;
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+.main input[type="checkbox"]::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: var(--text);
+  box-shadow: 0 0 6px var(--text);
+  transform: scale(0);
+  transition: transform 0.15s ease;
+}
+.main input[type="checkbox"]:checked::before { transform: scale(1); }
+.main input[type="checkbox"]:hover { box-shadow: 0 0 8px var(--border); }
+
+.details { flex: 1; min-width: 0; } /* ocupă spațiul dintre mini-disc și partea dreaptă */
+
+/* Etapa 8: titlul e link spre pagina de detaliu */
+.title {
+  display: block;
+  margin: 0 0 5px 0;
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--text);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.title:hover { color: var(--accent-hover); text-decoration: underline; text-shadow: 0 0 6px var(--accent-hover); }
+
+/* Titlul din feed (fără link) */
+.titleText { margin: 0 0 5px 0; font-size: 1rem; }
+
+.meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* Partea dreaptă: ON_DECK + ♥ sus, starea, apoi ștergerea */
+.side { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.sideTop { display: flex; align-items: center; gap: 8px; }
+
+/* Finalizat (PLAYED) */
+.done .title { text-decoration: line-through; color: var(--muted); }
+.done .status { color: var(--muted); }
+.done:not(.onDeck) { border-color: var(--muted); }
+
+@media (max-width: 700px) {
+  .card { flex-direction: column; align-items: flex-start; }
+  .side { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+}

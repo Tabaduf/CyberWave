@@ -1,0 +1,96 @@
+/* Player: panoul NOW_PLAYING (discul are stilurile lui în Vinil.module.css) */
+.player { text-align: center; }
+
+.title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Mini-egalizator: 5 bare. Sar doar cât muzica rulează
+   (is-playing e clasa globală pusă de Layout pe rădăcina aplicației). */
+.eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.eq i {
+  width: 3px;
+  height: 20%;
+  background: var(--text);
+  box-shadow: 0 0 4px var(--text);
+  animation: eq-bounce 0.7s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+/* Fiecare bară pornește la alt moment, ca să nu sară toate deodată */
+.eq i:nth-child(2) { animation-delay: -0.2s; }
+.eq i:nth-child(3) { animation-delay: -0.45s; }
+.eq i:nth-child(4) { animation-delay: -0.1s; }
+.eq i:nth-child(5) { animation-delay: -0.3s; }
+:global(.is-playing) .eq i { animation-play-state: running; }
+
+@keyframes eq-bounce {
+  from { height: 20%; }
+  to { height: 100%; }
+}
+
+/* Informații piesă */
+.info h3 { margin: 0 0 4px; font-size: 0.95rem; }
+.state { margin: 6px 0 0; font-size: 0.72rem; color: var(--accent); letter-spacing: 2px; }
+
+/* ♥ LIKE și + PLAYLIST */
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Butoanele ⏮ ▶/❚❚ ⏭ ⟲ */
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.ctl {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text);
+  transition: background var(--ease), color var(--ease), box-shadow var(--ease), transform var(--ease);
+}
+.ctl:hover { box-shadow: 0 0 10px var(--accent-hover); transform: scale(1.08); }
+.ctl:active { transform: scale(0.94); }
+.ctl:disabled { opacity: 0.5; cursor: wait; }
+
+/* Butonul principal (play / pauză) e mai mare și mereu plin */
+.main {
+  width: 58px;
+  height: 58px;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.main svg { width: 26px; height: 26px; }
+/* Cât rulează, butonul pulsează ușor */
+.main.activ { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse {
+  50% { box-shadow: 0 0 24px var(--accent); }
+}
+
+/* Iconița de repeat se învârte înapoi odată cu discul */
+.repeat.activ { background: var(--text); color: var(--bg); opacity: 1; }
+.repeat.activ svg { animation: rewind-icon 0.9s cubic-bezier(0.3, 0, 0.2, 1); }
+@keyframes rewind-icon {
+  to { transform: rotate(-720deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eq i, .main.activ { animation: none; }
+}

@@ -16,11 +16,13 @@
       - aruncat prea încet, ricoșează din pereți, se oprește și revine;
       - lăsat peste un playlist (tabul PLAYLISTS) -> zboară în el și
         piesa e adăugată în acel playlist.
+   Etapa 8: clasele vin din Vinil.module.css (styles.nume).
    ============================================================ */
 
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { scratch, sparge } from "../audio/sintetizator.js";
+import styles from "./Vinil.module.css";
 
 /* Unghiurile brațului (grade), măsurate pe desen:
    REPAUS = ridicat, lângă disc; START = marginea discului
@@ -44,13 +46,13 @@ const NR_CIOBURI = 12;
    Folosită de 3 ori: pe platan, discul ținut în mână și fiecare ciob. */
 function FataDisc({ piesa }) {
   return (
-    <div className="vinyl">
-      <div className="vinyl-label">
+    <div className={styles.vinyl}>
+      <div className={styles.label}>
         {/* Randare condiționată: copertă dacă există, altfel imaginea de rezervă */}
         {piesa.cover ? (
           <img src={piesa.cover} alt={`Copertă: ${piesa.titlu}`} draggable="false" />
         ) : (
-          <div className="no-cover">no img found :(</div>
+          <div className={styles.noCover}>no img found :(</div>
         )}
       </div>
     </div>
@@ -131,10 +133,10 @@ export default function Vinil({
   const peDisc = pePlatan && (ruleaza || rewind || scratching || progres > 0);
   const unghi = peDisc ? UNGHI_START + (UNGHI_FINAL - UNGHI_START) * progres : UNGHI_REPAUS;
 
-  let clase = "vinyl-wrap";
-  if (ruleaza) clase += " playing";
-  if (rewind) clase += " rewinding";
-  if (scratching) clase += " scratching";
+  let clase = styles.wrap;
+  if (ruleaza) clase += ` ${styles.playing}`;
+  if (rewind) clase += ` ${styles.rewinding}`;
+  if (scratching) clase += ` ${styles.scratching}`;
 
   const stil = {
     "--rot": `${durataRotatie.toFixed(2)}s`,
@@ -163,7 +165,7 @@ export default function Vinil({
     const r = e.currentTarget.parentElement.getBoundingClientRect();
     tragere.current = {
       unghi: 0,
-      ora: performance.now(),
+      ora: e.timeStamp, // ora evenimentului, pe același ceas ca performance.now()
       total: 0,
       ultimulSunet: 0,
       cx: r.left + r.width / 2,
@@ -179,7 +181,7 @@ export default function Vinil({
     // Discul e în mână: îl urmărim și ținem minte ultimele poziții (pentru viteza de aruncare)
     if (mod === "ridicat") {
       const z = zbor.current;
-      const acum = performance.now();
+      const acum = e.timeStamp;
       z.rot += (e.clientX - z.x) * 0.3; // se rotește puțin în direcția mișcării
       z.x = e.clientX;
       z.y = e.clientY;
@@ -192,7 +194,7 @@ export default function Vinil({
     if (!scratching) return;
 
     const t = tragere.current;
-    const acum = performance.now();
+    const acum = e.timeStamp;
 
     // Tras dincolo de margine -> discul sare de pe platan
     const distanta = Math.hypot(e.clientX - t.cx, e.clientY - t.cy);
@@ -252,7 +254,8 @@ export default function Vinil({
     setMod("drop");
     const z = zbor.current;
     const el = discZburatorRef.current;
-    const coperta = document.querySelector(`[data-playlist-id="${id}"] .playlist-cover`);
+    // Etapa 8: după atribut, nu după clasă (clasele din CSS Modules primesc nume generate)
+    const coperta = document.querySelector(`[data-playlist-id="${id}"] [data-cover]`);
     const r = start.r;
 
     // Animație din JavaScript (Web Animations API): de unde e discul, până în centrul copertei
@@ -279,7 +282,7 @@ export default function Vinil({
   }
 
   /* --- Mâna se ridică --- */
-  function laEliberare() {
+  function laEliberare(e) {
     if (mod === "ridicat") {
       // Peste un playlist? Atunci nu se aruncă și nu se sparge: intră în playlist
       if (tintaRef.current !== null) {
@@ -289,7 +292,7 @@ export default function Vinil({
       // Viteza de aruncare = drumul din ultimele 100 ms / timpul lui.
       // Dacă mâna a stat pe loc înainte să dea drumul, nu mai sunt eșantioane
       // recente, deci viteza e 0 și discul doar e lăsat jos.
-      const acum = performance.now();
+      const acum = e.timeStamp;
       const s = zbor.current.esantioane.filter((e) => acum - e.t < 100);
       zbor.current.vx = 0;
       zbor.current.vy = 0;
@@ -300,7 +303,7 @@ export default function Vinil({
       }
       const viteza = Math.hypot(zbor.current.vx, zbor.current.vy);
       if (viteza < 250) disparitie(); // lăsat jos încet
-      else arunca();
+      else arunca(acum);
       return;
     }
     if (!scratching) return;
@@ -308,9 +311,9 @@ export default function Vinil({
   }
 
   /* --- Zborul: fizică simplă, cadru cu cadru --- */
-  function arunca() {
+  function arunca(oraStart) {
     setMod("zbor");
-    let anterior = performance.now();
+    let anterior = oraStart; // ora la care a fost aruncat (din evenimentul mouse-ului)
 
     function pas(acum) {
       const dt = Math.min(0.033, (acum - anterior) / 1000);
@@ -376,14 +379,14 @@ export default function Vinil({
   return (
     <div className={clase} style={stil}>
       {/* Brațul pick-up-ului */}
-      <div className="tonearm" aria-hidden="true"></div>
+      <div className={styles.tonearm} aria-hidden="true"></div>
 
       {/* Discul de pe platan. Exteriorul face rewind-ul, rotația "de mână"
           și ascultă de mouse; interiorul (FataDisc) face rotația normală.
           Cât e ridicat, rămâne invizibil, dar continuă să primească mișcările
           mouse-ului (pointer capture), ca să-l putem purta prin pagină. */}
       <div
-        className={`vinyl-rewind${pePlatan ? "" : " gol"}${intors ? " intors" : ""}`}
+        className={`${styles.disc}${pePlatan ? "" : ` ${styles.gol}`}${intors ? ` ${styles.intors}` : ""}`}
         style={{ transform: `rotate(${unghiManual}deg)` }}
         onPointerDown={laApasare}
         onPointerMove={laMiscare}
@@ -394,7 +397,7 @@ export default function Vinil({
         <FataDisc piesa={piesa} />
       </div>
 
-      <span className="dj-hint" aria-hidden="true">
+      <span className={styles.hint} aria-hidden="true">
         {scratching ? "◎ SCRATCH" : mod === "ridicat" ? "THROW · DROP · OR DROP ON A PLAYLIST" : "SPIN = SCRATCH · PULL OUT = LIFT"}
       </span>
 
@@ -405,7 +408,7 @@ export default function Vinil({
         createPortal(
           <div
             ref={discZburatorRef}
-            className={`disc-zbor ${mod}${pesteTinta ? " peste-tinta" : ""}`}
+            className={`${styles.zbor} ${styles[mod] ?? ""}${pesteTinta ? ` ${styles.pesteTinta}` : ""}`}
             data-gen={piesa.gen}
             style={{
               width: diametru,
@@ -416,7 +419,7 @@ export default function Vinil({
           >
             {/* Corpul discului: aici se aplică mărirea / micșorarea (CSS),
                 separat de poziție, ca scara să nu "tragă" discul din locul mouse-ului */}
-            <div className="disc-zbor-corp">
+            <div className={styles.corp}>
               <FataDisc piesa={piesa} />
             </div>
           </div>,
@@ -428,16 +431,16 @@ export default function Vinil({
         impact &&
         createPortal(
           <div
-            className="cioburi"
+            className={styles.cioburi}
             data-gen={piesa.gen}
             style={{ left: impact.x - start.r, top: impact.y - start.r, width: diametru, height: diametru }}
             aria-hidden="true"
           >
-            <div className="ciob-flash"></div>
+            <div className={styles.flash}></div>
             {impact.cioburi.map((c) => (
               <div
                 key={c.id}
-                className="ciob"
+                className={styles.ciob}
                 style={{
                   clipPath: c.clip,
                   "--dx": `${c.dx}px`,

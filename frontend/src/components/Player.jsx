@@ -4,11 +4,14 @@
    butoanele ⏮  ▶/❚❚  ⏭  ⟲, plus ♥ LIKE și + PLAYLIST.
    Nu ține nicio stare: primește totul prin props de la App
    și anunță click-urile prin funcțiile on... primite tot prin props.
+   Etapa 8: clasele vin din Player.module.css; .panel, .empty,
+   .meta-text și .action-btn sunt clasele comune din index.css.
    ============================================================ */
 
 import Vinil from "./Vinil.jsx";
 import MeniuPlaylist from "./MeniuPlaylist.jsx";
 import { Iconita, BaraProgres } from "./Comenzi.jsx";
+import styles from "./Player.module.css";
 
 export default function Player({
   piesa,
@@ -39,7 +42,7 @@ export default function Player({
   // Return timpuriu: nicio piesă de redat
   if (!piesa) {
     return (
-      <section className="panel player">
+      <section className={`panel ${styles.player}`}>
         <h2>&gt;&gt; NOW_PLAYING</h2>
         <p className="empty">[SYS_MSG]: NO TRACK LOADED.</p>
       </section>
@@ -57,11 +60,11 @@ export default function Player({
   if (discRidicat) stare = "⏏ DISC LIFTED";
 
   return (
-    <section className="panel player">
-      <h2 className="player-title">
+    <section className={`panel ${styles.player}`}>
+      <h2 className={styles.title}>
         &gt;&gt; NOW_PLAYING
         {/* Mini-egalizator: barele sar doar cât timp rulează */}
-        <span className="eq" aria-hidden="true">
+        <span className={styles.eq} aria-hidden="true">
           <i></i><i></i><i></i><i></i><i></i>
         </span>
       </h2>
@@ -85,16 +88,16 @@ export default function Player({
         onDropPlaylist={onDropPlaylist}
       />
 
-      <div className="track-info">
+      <div className={styles.info}>
         <h3>{piesa.titlu}</h3>
         <p className="meta-text">
           {piesa.format.toUpperCase()} · {piesa.gen.toUpperCase()} · {piesa.bpm} BPM
         </p>
-        <p className="player-state">{stare}</p>
+        <p className={styles.state}>{stare}</p>
       </div>
 
       {/* ♥ și + PLAYLIST pentru piesa de pe disc; listele se actualizează imediat */}
-      <div className="track-actions">
+      <div className={styles.actions}>
         <button
           type="button"
           className={liked ? "action-btn liked-on" : "action-btn"}
@@ -115,15 +118,15 @@ export default function Player({
       {/* Bara de progres comună (Comenzi.jsx): click = derulare */}
       <BaraProgres timp={timp} durata={piesa.durata} rewind={rewind} onDerulare={onDerulare} />
 
-      <div className="controls">
-        <button type="button" className="ctl" onClick={onInapoi} title="Înapoi" aria-label="Înapoi">
+      <div className={styles.controls}>
+        <button type="button" className={styles.ctl} onClick={onInapoi} title="Înapoi" aria-label="Înapoi">
           <Iconita nume="inapoi" />
         </button>
 
         {/* Un singur buton: iconița și textul se schimbă după stare */}
         <button
           type="button"
-          className={ruleaza ? "ctl ctl-main activ" : "ctl ctl-main"}
+          className={`${styles.ctl} ${styles.main}${ruleaza ? ` ${styles.activ}` : ""}`}
           onClick={onPlayPause}
           title={ruleaza ? "Pauză" : "Play"}
           aria-label={ruleaza ? "Pauză" : "Play"}
@@ -131,13 +134,13 @@ export default function Player({
           <Iconita nume={ruleaza ? "pause" : "play"} />
         </button>
 
-        <button type="button" className="ctl" onClick={onInainte} title="Înainte" aria-label="Înainte">
+        <button type="button" className={styles.ctl} onClick={onInainte} title="Înainte" aria-label="Înainte">
           <Iconita nume="inainte" />
         </button>
 
         <button
           type="button"
-          className={rewind ? "ctl ctl-repeat activ" : "ctl ctl-repeat"}
+          className={`${styles.ctl} ${styles.repeat}${rewind ? ` ${styles.activ}` : ""}`}
           onClick={onRepeat}
           disabled={rewind}
           title="Repeat: de la capăt"

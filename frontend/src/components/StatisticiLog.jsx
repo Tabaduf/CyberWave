@@ -8,6 +8,7 @@
      $ game      - statisticile jocului
      $ tail log  - ultimele acțiuni, cu ora
    Componenta doar CALCULEAZĂ și AFIȘEAZĂ: datele vin din useStatistici.
+   Etapa 8: clasele vin din StatisticiLog.module.css.
    ============================================================ */
 
 /* "Clasa" utilizatorului, după genul ascultat cel mai mult */
@@ -21,6 +22,8 @@ const CLASE = {
   "drum&bass": "BREAKBEAT_COURIER",
   ambient: "ORBITAL_DREAMER",
 };
+
+import styles from "./StatisticiLog.module.css";
 
 const LATIME_BARA = 20; // câte caractere are o bară de gen
 
@@ -64,13 +67,13 @@ export default function StatisticiLog({ statistici, likes, nrPlaylisturi, onRese
   const joc = statistici.joc;
 
   return (
-    <div className="syslog">
+    <div className={styles.syslog}>
       {/* $ sysinfo */}
-      <section className="syslog-block">
-        <p className="syslog-cmd">$ sysinfo --user</p>
-        <dl className="syslog-info">
+      <section className={styles.block}>
+        <p className={styles.cmd}>$ sysinfo --user</p>
+        <dl className={styles.info}>
           <dt>USER_CLASS</dt>
-          <dd className="syslog-accent">{genTop ? CLASE[genTop] ?? "UNKNOWN_SIGNAL" : "NO_DATA_YET"}</dd>
+          <dd className={styles.accent}>{genTop ? CLASE[genTop] ?? "UNKNOWN_SIGNAL" : "NO_DATA_YET"}</dd>
           <dt>LISTEN_TIME</dt>
           <dd>{formatDurata(timpTotal)}</dd>
           <dt>TRACKS_LOADED</dt>
@@ -87,22 +90,22 @@ export default function StatisticiLog({ statistici, likes, nrPlaylisturi, onRese
       </section>
 
       {/* $ genre: o bară ASCII pentru fiecare gen, în culorile lui (data-gen) */}
-      <section className="syslog-block">
-        <p className="syslog-cmd">$ genre --distribution</p>
+      <section className={styles.block}>
+        <p className={styles.cmd}>$ genre --distribution</p>
         {genuri.length === 0 ? (
-          <p className="syslog-empty">// press PLAY to start collecting data</p>
+          <p className={styles.empty}>// press PLAY to start collecting data</p>
         ) : (
-          <ul className="syslog-bars">
+          <ul className={styles.bars}>
             {genuri.map((g) => {
               const pline = Math.round(g.procent * LATIME_BARA);
               return (
                 <li key={g.gen} data-gen={g.gen}>
-                  <span className="bar-name">{g.gen.toUpperCase()}</span>
-                  <span className="bar-ascii">
+                  <span className={styles.barName}>{g.gen.toUpperCase()}</span>
+                  <span className={styles.barAscii}>
                     {"█".repeat(pline)}
-                    <span className="bar-rest">{"░".repeat(LATIME_BARA - pline)}</span>
+                    <span className={styles.barRest}>{"░".repeat(LATIME_BARA - pline)}</span>
                   </span>
-                  <span className="bar-pct">{Math.round(g.procent * 100)}%</span>
+                  <span className={styles.barPct}>{Math.round(g.procent * 100)}%</span>
                 </li>
               );
             })}
@@ -111,16 +114,16 @@ export default function StatisticiLog({ statistici, likes, nrPlaylisturi, onRese
       </section>
 
       {/* $ top */}
-      <section className="syslog-block">
-        <p className="syslog-cmd">$ top --tracks -n 5</p>
+      <section className={styles.block}>
+        <p className={styles.cmd}>$ top --tracks -n 5</p>
         {topPiese.length === 0 ? (
-          <p className="syslog-empty">// no tracks played yet</p>
+          <p className={styles.empty}>// no tracks played yet</p>
         ) : (
-          <ol className="syslog-top">
+          <ol className={styles.top}>
             {topPiese.map((p) => (
               <li key={p.id}>
-                <span className="top-title">{p.titlu}</span>
-                <span className="top-time">{formatDurata(p.secunde)}</span>
+                <span className={styles.topTitle}>{p.titlu}</span>
+                <span className={styles.topTime}>{formatDurata(p.secunde)}</span>
               </li>
             ))}
           </ol>
@@ -128,13 +131,13 @@ export default function StatisticiLog({ statistici, likes, nrPlaylisturi, onRese
       </section>
 
       {/* $ game */}
-      <section className="syslog-block">
-        <p className="syslog-cmd">$ game --stats tunnel_runner</p>
-        <dl className="syslog-info">
+      <section className={styles.block}>
+        <p className={styles.cmd}>$ game --stats tunnel_runner</p>
+        <dl className={styles.info}>
           <dt>RUNS</dt>
           <dd>{joc.runde}</dd>
           <dt>BEST_SCORE</dt>
-          <dd className="syslog-accent">{String(joc.record).padStart(6, "0")}</dd>
+          <dd className={styles.accent}>{String(joc.record).padStart(6, "0")}</dd>
           <dt>COLLISIONS</dt>
           <dd>{joc.lovituri}</dd>
           <dt>LASERS_FIRED</dt>
@@ -145,22 +148,22 @@ export default function StatisticiLog({ statistici, likes, nrPlaylisturi, onRese
       </section>
 
       {/* $ tail: jurnalul, cu un cursor care clipește la final */}
-      <section className="syslog-block syslog-wide">
-        <p className="syslog-cmd">
+      <section className={`${styles.block} ${styles.wide}`}>
+        <p className={styles.cmd}>
           $ tail -n 14 /var/log/cyberwave.log
-          <button type="button" className="syslog-clear" onClick={onReseteaza}>
+          <button type="button" className={styles.clear} onClick={onReseteaza}>
             $ clear
           </button>
         </p>
-        <ol className="syslog-lines">
+        <ol className={styles.lines}>
           {ultimele.map((r) => (
-            <li key={r.id} className={`log-${r.tip.toLowerCase()}`}>
-              <span className="log-ora">[{formatOra(r.ora)}]</span>
-              <span className="log-tip">{r.tip}</span>
-              <span className="log-text">{r.text}</span>
+            <li key={r.id} className={styles[`log-${r.tip.toLowerCase()}`]}>
+              <span className={styles.ora}>[{formatOra(r.ora)}]</span>
+              <span className={styles.tip}>{r.tip}</span>
+              <span className={styles.text}>{r.text}</span>
             </li>
           ))}
-          <li className="log-cursor" aria-hidden="true">
+          <li className={styles.logCursor} aria-hidden="true">
             &gt; <span className="cursor">_</span>
           </li>
         </ol>

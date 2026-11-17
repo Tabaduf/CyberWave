@@ -1,0 +1,81 @@
+/* FeedList: panoul FOR_YOU. Cardurile folosesc PiesaCard.module.css. */
+.feed { display: flex; flex-direction: column; gap: 14px; }
+.list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+
+.profile {
+  padding: 10px 12px;
+  border: 1px dashed color-mix(in srgb, var(--border) 60%, transparent);
+  background: color-mix(in srgb, var(--bg) 40%, transparent);
+  font-size: 0.78rem;
+}
+/* Linia de comandă, în stilul blocurilor din SYS_LOG */
+.cmd {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 8px;
+  color: var(--accent);
+  font-weight: bold;
+}
+.profileLine { margin: 0; color: var(--text); letter-spacing: 1px; }
+
+.refresh {
+  padding: 2px 8px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: bold;
+  transition: background var(--ease), color var(--ease);
+}
+.refresh:hover { background: var(--accent); color: var(--bg); }
+
+/* Cardurile din feed apar pe rând, unul după altul */
+.feedCard { animation: apare 0.35s ease backwards; }
+.feedCard:nth-child(2) { animation-delay: 0.04s; }
+.feedCard:nth-child(3) { animation-delay: 0.08s; }
+.feedCard:nth-child(4) { animation-delay: 0.12s; }
+.feedCard:nth-child(5) { animation-delay: 0.16s; }
+.feedCard:nth-child(6) { animation-delay: 0.2s; }
+.feedCard:nth-child(7) { animation-delay: 0.24s; }
+.feedCard:nth-child(8) { animation-delay: 0.28s; }
+
+/* Bara de potrivire ███░░ 87%, în culorile genului */
+.match {
+  font-size: 0.68rem;
+  letter-spacing: -1px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.barRest { color: var(--muted); opacity: 0.4; }
+.motiv {
+  margin: 4px 0 0;
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* + QUEUE */
+.add {
+  margin-top: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  transition: background var(--ease), color var(--ease);
+}
+.add:hover { background: var(--accent); color: var(--bg); }
+
+@keyframes apare {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feedCard { animation: none; }
+}

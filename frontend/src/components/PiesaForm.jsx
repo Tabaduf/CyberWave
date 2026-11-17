@@ -7,20 +7,16 @@
    - validarea se face înainte de trimitere, iar mesajul apare sub
      câmpuri (nu cu alert);
    - formularul nu apelează fetch: dă datele mai departe prin onAdd,
-     iar App le trimite la server;
+     iar pagina le trimite la server;
    - butonul se dezactivează cât se trimite (fără dublu click), iar
      câmpurile se golesc DOAR dacă salvarea a reușit.
+   Etapa 8: valorile fixe vin din constants.js, clasele din
+   PiesaForm.module.css (styles.nume), iar butonul are clasa globală btn.
    ============================================================ */
 
 import { useState } from "react";
-
-/* Valorile fixe: aceleași ca în db.json și ca în restul aplicației */
-const FORMATE = [
-  { value: "flac", label: "FLAC (Lossless)" },
-  { value: "mp3", label: "MP3 (320kbps)" },
-  { value: "synth", label: "SYNTH (MIDI)" },
-];
-const GENURI = ["synthwave", "darksynth", "chiptune", "industrial", "vaporwave", "lo-fi", "drum&bass", "ambient"];
+import { FORMATE, GENURI } from "../constants.js";
+import styles from "./PiesaForm.module.css";
 
 /* Limitele validărilor */
 const TITLU_MAX = 100;
@@ -89,7 +85,7 @@ export default function PiesaForm({ onAdd }) {
 
   return (
     // noValidate: mesajele sunt cele din cod, nu cele implicite ale browserului
-    <form className="item-form" onSubmit={handleSubmit} noValidate data-testid="form">
+    <form className={styles.form} onSubmit={handleSubmit} noValidate data-testid="form">
       <label>
         [TITLE]
         <input
@@ -115,7 +111,7 @@ export default function PiesaForm({ onAdd }) {
       </label>
 
       {/* Genul și tempo-ul, pe un rând */}
-      <div className="form-row">
+      <div className={styles.row}>
         <label>
           [GENRE]
           <select value={gen} onChange={(e) => setGen(e.target.value)} data-testid="form-gen">
@@ -148,7 +144,7 @@ export default function PiesaForm({ onAdd }) {
         </p>
       )}
 
-      <button type="submit" disabled={trimite} data-testid="form-submit">
+      <button type="submit" className="btn" disabled={trimite} data-testid="form-submit">
         {trimite ? "SAVING..." : "EXECUTE // ADD"}
       </button>
     </form>

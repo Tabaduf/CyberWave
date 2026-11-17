@@ -2,26 +2,28 @@
    CYBERWAVE // PiesaCard.jsx
    Un singur card din listă. Primește piesa și funcțiile prin props.
    Cardul NU modifică datele: doar anunță ce a făcut utilizatorul,
-   apelând funcțiile primite de la App (onToggle, onDelete, ...).
+   apelând funcțiile primite de la pagină (onToggle, onDelete, ...).
      - mini-discul        -> pune piesa pe disc și o pornește
-     - checkbox / titlu   -> PENDING <-> PLAYED
+     - checkbox           -> PENDING <-> PLAYED
+     - titlul (link)      -> pagina de detaliu a piesei (Etapa 8)
      - ♥                  -> intră / iese din LIKED_SONGS
      - ✕ DELETE           -> șterge piesa
-   Etapa 7: atributele data-testid (item, item-title, item-toggle,
-   item-delete) sunt reperele pentru verificarea automată; nu schimbă
-   nici aspectul, nici comportamentul. data-id = id-ul piesei.
+   Etapa 7: atributele data-testid (item, item-toggle, item-delete)
+   sunt reperele pentru verificarea automată. data-id = id-ul piesei.
+   Etapa 8: titlul devine <Link>, cu data-testid="item-link" (în locul
+   lui item-title); clasele vin din PiesaCard.module.css (styles.nume),
+   iar cele comune (badge, gen-tag, mini-disc ...) din index.css.
    ============================================================ */
 
-/* Traduce valoarea din date în textul afișat pe badge.
-   În date rămâne "flac" (litere mici, folosit și în clasa CSS),
-   iar pe ecran apare "FLAC". */
-const ETICHETE_FORMAT = { flac: "FLAC", mp3: "MP3", synth: "SYNTH" };
+import { Link } from "react-router-dom";
+import { ETICHETE_FORMAT } from "../constants.js";
+import styles from "./PiesaCard.module.css";
 
-export default function PiesaCard({ piesa, peDisc, ruleaza, liked, onAlege, onLike, onToggle, onDelete }) {
-  // Clasele cardului: "done" = redată, "on-deck" = e acum pe disc
-  let clase = "item-card";
-  if (piesa.redata) clase += " done";
-  if (peDisc) clase += " on-deck";
+export default function PiesaCard({ piesa, link, peDisc, ruleaza, liked, onAlege, onLike, onToggle, onDelete }) {
+  // Clasele cardului: done = redată, onDeck = e acum pe disc
+  let clase = styles.card;
+  if (piesa.redata) clase += ` ${styles.done}`;
+  if (peDisc) clase += ` ${styles.onDeck}`;
 
   return (
     <li className={clase} data-testid="item" data-id={piesa.id}>
@@ -43,35 +45,39 @@ export default function PiesaCard({ piesa, peDisc, ruleaza, liked, onAlege, onLi
         </svg>
       </button>
 
-      {/* label înconjoară checkbox-ul și textul: bifarea merge cu click oriunde pe titlu */}
-      <label className="piesa-main">
-        {/* Checkbox CONTROLAT: checked arată ce spun datele,
-            onChange anunță App-ul. Fără onChange, React avertizează în consolă. */}
+      {/* Etapa 8: <label> devine <div>, pentru că titlul e acum link.
+          Checkbox-ul primește aria-label, ca cititorul de ecran să știe ce bifează. */}
+      <div className={styles.main}>
+        {/* Checkbox CONTROLAT: checked arată ce spun datele, onChange anunță pagina */}
         <input
           type="checkbox"
           checked={piesa.redata}
           onChange={() => onToggle(piesa.id)}
+          aria-label={`Marchează ${piesa.titlu} ca redată`}
           data-testid="item-toggle"
         />
 
-        <div className="card-details">
-          <h3 data-testid="item-title">{piesa.titlu}</h3>
+        <div className={styles.details}>
+          {/* Link schimbă doar adresa, fără reîncărcarea paginii: muzica nu se oprește */}
+          <Link to={link} className={styles.title} data-testid="item-link">
+            {piesa.titlu}
+          </Link>
 
-          <div className="card-meta">
-            {/* Clasa se construiește din valoare: "flac" -> "badge-flac" (definită în App.css) */}
+          <div className={styles.meta}>
+            {/* Clasa globală se construiește din valoare: "flac" -> "badge-flac" (index.css) */}
             <span className={`badge badge-${piesa.format}`}>
               {ETICHETE_FORMAT[piesa.format]}
             </span>
 
-            {/* Genul apare în culorile lui (data-gen alege paleta, vezi App.css) */}
+            {/* Genul apare în culorile lui (data-gen alege paleta, vezi index.css) */}
             <span className="gen-tag" data-gen={piesa.gen}>{piesa.gen.toUpperCase()}</span>
             <span className="meta-text">{piesa.bpm} BPM</span>
           </div>
         </div>
-      </label>
+      </div>
 
-      <div className="card-side">
-        <div className="card-side-top">
+      <div className={styles.side}>
+        <div className={styles.sideTop}>
           {/* Randare condiționată cu &&: apare doar când condiția e adevărată */}
           {peDisc && <span className="on-deck-tag">◉ ON_DECK</span>}
 
@@ -87,12 +93,9 @@ export default function PiesaCard({ piesa, peDisc, ruleaza, liked, onAlege, onLi
         </div>
 
         {/* Textul stării, ales după valoarea booleană */}
-        <span className="status">{piesa.redata ? "PLAYED" : "PENDING"}</span>
+        <span className={styles.status}>{piesa.redata ? "PLAYED" : "PENDING"}</span>
 
-        {/* () => onDelete(piesa.id): funcția se apelează la CLICK.
-            onClick={onDelete(piesa.id)} ar apela-o imediat, la randare,
-            și ar șterge toată lista fără niciun click.
-            aria-label spune cititorului de ecran CE se șterge. */}
+        {/* () => onDelete(piesa.id): funcția se apelează la CLICK, nu la randare */}
         <button
           type="button"
           className="btn-danger"

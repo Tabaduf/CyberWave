@@ -3,12 +3,16 @@
    O listă de piese (coada, liked songs sau random).
    Primește array-ul și funcțiile prin props și le transmite,
    neschimbate, fiecărui PiesaCard. Lista nu modifică nimic singură.
+   Etapa 8: linkCatre(piesa) dă adresa paginii de detaliu a fiecărei
+   piese, iar clasa listei vine din PiesaList.module.css.
    ============================================================ */
 
 import PiesaCard from "./PiesaCard.jsx";
+import styles from "./PiesaList.module.css";
 
 /* mesajGol are o valoare implicită: dacă părintele nu trimite
-   un mesaj propriu, se folosește cel pentru coada audio. */
+   un mesaj propriu, se folosește cel pentru coada audio.
+   linkCatre implicit: /piese/:id (resursa din tw.json). */
 export default function PiesaList({
   piese,
   curentId,
@@ -18,6 +22,7 @@ export default function PiesaList({
   onLike,
   onToggle,
   onDelete,
+  linkCatre = (piesa) => `/piese/${piesa.id}`,
   mesajGol = "[SYS_MSG]: AUDIO_QUEUE EMPTY. NO TRACKS LOADED.",
 }) {
   // 1. Return timpuriu: dacă nu există piese, afișăm mesajul și ne oprim aici
@@ -32,13 +37,13 @@ export default function PiesaList({
   // 2. Altfel, câte un card pentru fiecare piesă (map, ca în Etapa 2).
   //    key={piesa.id} stă pe PiesaCard, elementul întors direct din map,
   //    și e id-ul, nu poziția: după o ștergere pozițiile se mută, id-urile nu.
-  //    onToggle și onDelete merg mai departe exact cum au venit din App.
   return (
-    <ul className="item-list">
+    <ul className={styles.list}>
       {piese.map((piesa) => (
         <PiesaCard
           key={piesa.id}
           piesa={piesa}
+          link={linkCatre(piesa)}
           peDisc={piesa.id === curentId}
           ruleaza={ruleaza && piesa.id === curentId}
           liked={likedIds.includes(piesa.id)}

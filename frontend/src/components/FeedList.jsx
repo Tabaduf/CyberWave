@@ -4,8 +4,14 @@
    Fiecare recomandare arată piesa, cât de bine se potrivește (%)
    și de ce a fost aleasă. Poți s-o asculți (mini-discul), s-o
    apreciezi (♥) sau s-o adaugi în coadă (+ QUEUE).
-   Componenta doar afișează: datele și acțiunile vin din App.
+   Componenta doar afișează: datele și acțiunile vin din pagină.
+   Etapa 8: cardurile arată la fel ca în listă, deci folosesc clasele
+   din PiesaCard.module.css (card); restul vin din FeedList.module.css.
+   Piesele din feed nu sunt pe server, deci titlul lor nu e link.
    ============================================================ */
+
+import card from "./PiesaCard.module.css";
+import styles from "./FeedList.module.css";
 
 const LATIME_BARA = 12; // câte caractere are bara de potrivire
 
@@ -17,16 +23,16 @@ export default function FeedList({ profil, feed, curentId, ruleaza, likedIds, on
     .join(" · ");
 
   return (
-    <div className="feed">
+    <div className={styles.feed}>
       {/* Profilul: din ce a fost calculat feed-ul */}
-      <div className="feed-profile">
-        <p className="syslog-cmd">
+      <div className={styles.profile}>
+        <p className={styles.cmd}>
           $ recommend --based-on listening_stats
-          <button type="button" className="feed-refresh" onClick={onRegenereaza}>
+          <button type="button" className={styles.refresh} onClick={onRegenereaza}>
             ⟳ REGENERATE
           </button>
         </p>
-        <p className="feed-profile-line">
+        <p className={styles.profileLine}>
           {profil.areDate
             ? `PROFILE: ${rezumat} · AVG ${profil.bpmMediu} BPM`
             : "PROFILE: NO DATA YET · PLAY OR LIKE A FEW TRACKS. SHOWING A DISCOVERY MIX."}
@@ -36,15 +42,18 @@ export default function FeedList({ profil, feed, curentId, ruleaza, likedIds, on
       {feed.length === 0 ? (
         <p className="empty">[SYS_MSG]: FEED EMPTY. PRESS ⟳ REGENERATE.</p>
       ) : (
-        <ul className="item-list">
+        <ul className={styles.list}>
           {feed.map(({ piesa, potrivire, motiv }) => {
             const peDisc = piesa.id === curentId;
             const liked = likedIds.includes(piesa.id);
             const pline = Math.round((potrivire / 100) * LATIME_BARA);
             const listaPiese = feed.map((r) => r.piesa); // ordinea pentru ⏮ / ⏭
 
+            let clase = `${card.card} ${styles.feedCard}`;
+            if (peDisc) clase += ` ${card.onDeck}`;
+
             return (
-              <li key={piesa.id} className={peDisc ? "item-card feed-card on-deck" : "item-card feed-card"}>
+              <li key={piesa.id} className={clase}>
                 {/* Mini-disc = buton de play */}
                 <button
                   type="button"
@@ -60,22 +69,22 @@ export default function FeedList({ profil, feed, curentId, ruleaza, likedIds, on
                   </svg>
                 </button>
 
-                <div className="card-details">
-                  <h3>{piesa.titlu}</h3>
-                  <div className="card-meta">
+                <div className={card.details}>
+                  <h3 className={card.titleText}>{piesa.titlu}</h3>
+                  <div className={card.meta}>
                     <span className="gen-tag" data-gen={piesa.gen}>{piesa.gen.toUpperCase()}</span>
                     <span className="meta-text">{piesa.bpm} BPM</span>
                     {/* Bara de potrivire, în stilul terminalului */}
-                    <span className="feed-match" data-gen={piesa.gen}>
+                    <span className={styles.match} data-gen={piesa.gen}>
                       {"█".repeat(pline)}
-                      <span className="bar-rest">{"░".repeat(LATIME_BARA - pline)}</span> {potrivire}%
+                      <span className={styles.barRest}>{"░".repeat(LATIME_BARA - pline)}</span> {potrivire}%
                     </span>
                   </div>
-                  <p className="feed-motiv">{"// "}{motiv}</p>
+                  <p className={styles.motiv}>{"// "}{motiv}</p>
                 </div>
 
-                <div className="card-side">
-                  <div className="card-side-top">
+                <div className={card.side}>
+                  <div className={card.sideTop}>
                     {peDisc && <span className="on-deck-tag">◉ ON_DECK</span>}
                     <button
                       type="button"
@@ -87,7 +96,7 @@ export default function FeedList({ profil, feed, curentId, ruleaza, likedIds, on
                       {liked ? "♥" : "♡"}
                     </button>
                   </div>
-                  <button type="button" className="feed-add" onClick={() => onAdaugaInCoada(piesa)}>
+                  <button type="button" className={styles.add} onClick={() => onAdaugaInCoada(piesa)}>
                     + QUEUE
                   </button>
                 </div>

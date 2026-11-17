@@ -1,0 +1,33 @@
+/* PiesaForm: formularul de adăugare (stilurile din mockup-ul Etapei 1).
+   Butonul folosește clasa globală .btn (index.css). */
+.form { display: flex; flex-direction: column; gap: 14px; }
+.form label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.85rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.form input,
+.form select {
+  margin-top: 5px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  background: var(--input-bg);
+  color: var(--text);
+  font-family: inherit;
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+.form input:focus,
+.form select:focus { outline: none; box-shadow: 0 0 8px var(--border); }
+.form select option { background: var(--surface); color: var(--text); }
+
+/* Genul și BPM-ul pe același rând */
+.row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; }
+
+/* Etapa 7: câmpul greșit, marcat prin aria-invalid */
+.form input[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+}

@@ -1,0 +1,288 @@
+/* Vinil: discul, brațul pick-up, modul DJ, discul aruncat / spart */
+
+/* --- Platanul (se vede doar când discul e luat de pe el) --- */
+.wrap {
+  position: relative;
+  width: min(100%, 250px);
+  aspect-ratio: 1;
+  margin: 18px auto 20px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    #3a3340 0 4px,                 /* axul din mijloc */
+    #0c0a10 5px 44%,
+    color-mix(in srgb, var(--border) 25%, #0c0a10) 45% 47%,  /* un inel colorat */
+    #0c0a10 48% 49.5%,
+    transparent 50%
+  );
+  animation: disc-in 0.45s ease; /* la fiecare piesă nouă discul "intră" */
+}
+
+/* Reflexia de lumină: stă pe loc deasupra discului care se rotește */
+.wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 30deg,
+    transparent 0deg,
+    rgba(255, 255, 255, 0.09) 25deg,
+    transparent 60deg,
+    transparent 180deg,
+    rgba(255, 255, 255, 0.06) 205deg,
+    transparent 240deg
+  );
+  pointer-events: none;
+}
+
+/* Stratul exterior: rewind, rotația "de mână" și prinderea cu mouse-ul */
+.disc {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  cursor: grab;
+  touch-action: none; /* pe telefon, tragerea învârte discul în loc să derulez pagina */
+  user-select: none;
+}
+.rewinding .disc {
+  /* 3 ture înapoi, rapid la început și încetinind la final */
+  animation: rewind 0.9s cubic-bezier(0.3, 0, 0.2, 1);
+}
+.scratching .disc { cursor: grabbing; }
+.gol { opacity: 0; }                          /* discul e în mână: platanul rămâne gol */
+.intors { animation: disc-in 0.4s ease; }     /* discul revine pe platan */
+
+/* Stratul interior: rotația normală */
+.vinyl {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  /* Șanțurile discului: cercuri concentrice foarte fine */
+  background: repeating-radial-gradient(
+    circle at center,
+    #0c0a10 0 2px,
+    #19131f 2px 3px
+  );
+  border: 2px solid #000;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--border) 15%, #07030a),
+    0 0 25px -6px var(--border);
+  /* --rot = durata unei rotații, calculată din BPM în Vinil.jsx */
+  animation: spin var(--rot, 2s) linear infinite;
+  animation-play-state: paused; /* oprit până se apasă PLAY */
+  transition: box-shadow 0.4s ease;
+}
+.playing .vinyl {
+  animation-play-state: running;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--border) 15%, #07030a),
+    0 0 40px -2px var(--border);
+}
+/* Cât timp mâna e pe disc, rotația automată se oprește, iar discul strălucește */
+.scratching .vinyl {
+  animation-play-state: paused;
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--border) 15%, #07030a),
+    0 0 50px 0 var(--accent-hover);
+}
+
+/* Cercul mic din mijloc, cu coperta */
+.label {
+  position: relative;
+  width: 40%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+  background: var(--card);
+}
+.label img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* umple cercul fără să deformeze imaginea */
+  display: block;
+}
+/* Gaura din centrul discului */
+.label::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 0 0 0 1px var(--muted);
+}
+
+/* Imaginea de rezervă când piesa nu are copertă */
+.noCover {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  align-content: start;
+  padding: 20% 16% 0; /* textul stă deasupra găurii din centru și se rupe pe 2 rânduri */
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--border) 18%, #07030a) 0 6px,
+    var(--card) 6px 12px
+  );
+  color: var(--text);
+  font-size: 0.62rem;
+  font-weight: bold;
+  text-align: center;
+  line-height: 1.2;
+}
+
+/* --- Brațul pick-up-ului, prins în colțul din dreapta sus ---
+   --arm vine din Vinil.jsx: -10deg = ridicat, 3deg = începutul piesei,
+   24deg = finalul piesei. Tranziția face mișcarea continuă între pași. */
+.tonearm {
+  position: absolute;
+  top: -2%;
+  right: 2%;
+  z-index: 3;
+  width: 6px;
+  height: 60%;
+  border-radius: 3px;
+  background: linear-gradient(var(--muted), var(--text));
+  transform-origin: top center;
+  transform: rotate(var(--arm, -10deg));
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none; /* brațul nu "fură" click-urile de pe disc */
+}
+/* Cât timp rulează, brațul se mișcă liniar, la fel ca pașii de timp */
+.playing .tonearm { transition: transform 0.3s linear; }
+/* La rewind alunecă înapoi pe aceeași durată ca discul */
+.rewinding .tonearm { transition: transform 0.9s cubic-bezier(0.3, 0, 0.2, 1); }
+
+/* Pivotul (cercul de sus) */
+.tonearm::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid var(--border);
+}
+/* Capul cu acul (jos) */
+.tonearm::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  width: 12px;
+  height: 20px;
+  transform: translateX(-50%);
+  border-radius: 2px;
+  background: var(--text);
+  box-shadow: 0 0 8px var(--text);
+}
+
+/* Indiciul de sub disc: discret, mai vizibil la hover și în timpul scratch-ului */
+.hint {
+  position: absolute;
+  left: 50%;
+  bottom: -18px;
+  transform: translateX(-50%);
+  font-size: 0.62rem;
+  letter-spacing: 2px;
+  white-space: nowrap;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity var(--ease);
+  pointer-events: none;
+}
+.wrap:hover .hint { opacity: 0.8; }
+.scratching .hint { opacity: 1; color: var(--accent-hover); }
+
+/* --- Discul din mână / din zbor (desenat în <body>, peste tot) --- */
+.zbor {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 500;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: drop-shadow(0 22px 26px rgba(0, 0, 0, 0.6));
+  will-change: transform; /* browserul îl pregătește pentru mișcare lină */
+}
+.zbor .vinyl {
+  animation: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--border) 15%, #07030a), 0 0 30px var(--border);
+}
+/* Mărimea discului se schimbă pe corpul lui, nu pe .zbor:
+   .zbor are deja transform-ul de poziție, iar o scară pusă tot acolo
+   ar muta și poziția (s-ar scala și deplasarea) */
+.corp {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.2s ease;
+}
+/* Ridicat: crește puțin, ca și cum ar fi mai aproape de tine */
+.ridicat .corp { transform: scale(1.08); }
+/* Lăsat jos: dispare repede */
+.fade .corp { animation: disc-fade 0.35s ease forwards; }
+/* Deasupra unui playlist: se micșorează */
+.pesteTinta .corp { transform: scale(0.6); }
+
+/* --- Cioburile: fiecare e o "felie" din disc (clip-path) care zboară în direcția ei --- */
+.cioburi {
+  position: fixed;
+  z-index: 500;
+  pointer-events: none;
+}
+.ciob {
+  position: absolute;
+  inset: 0;
+  transform: rotate(var(--start));
+  animation: ciob 0.7s cubic-bezier(0.2, 0.7, 0.4, 1) forwards;
+}
+.ciob .vinyl { animation: none; }
+/* Fulgerul de la impact */
+.flash {
+  position: absolute;
+  inset: -40%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-hover), transparent 60%);
+  animation: ciob-flash 0.4s ease-out forwards;
+}
+
+/* --- Animațiile --- */
+@keyframes disc-in {
+  from { opacity: 0; transform: scale(0.85) rotate(-40deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+@keyframes rewind {
+  to { transform: rotate(-1080deg); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes disc-fade {
+  to { opacity: 0; transform: scale(0.7); }
+}
+@keyframes ciob {
+  to {
+    transform: translate(var(--dx), var(--dy)) rotate(calc(var(--start) + var(--rot)));
+    opacity: 0;
+  }
+}
+@keyframes ciob-flash {
+  from { opacity: 1; transform: scale(0.4); }
+  to { opacity: 0; transform: scale(1.5); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wrap { animation: none; }
+}

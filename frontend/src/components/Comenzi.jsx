@@ -4,7 +4,13 @@
    în panoul Player și în bara de jos (PlayerBar).
    Un fișier poate exporta mai multe lucruri: aici avem
    export-uri cu nume, importate cu { Iconita, BaraProgres }.
+   Etapa 8: formatTimp s-a mutat în ../format.js (un fișier de
+   componente exportă doar componente), iar stilurile barei de
+   progres stau în Comenzi.module.css.
    ============================================================ */
+
+import { formatTimp } from "../format.js";
+import styles from "./Comenzi.module.css";
 
 /* Iconițe SVG desenate din cod (arată la fel pe orice sistem, spre
    deosebire de simbolurile text, pe care Windows le poate afișa ca emoji) */
@@ -29,13 +35,6 @@ export function Iconita({ nume, marime = 20 }) {
   );
 }
 
-/* 75 secunde -> "01:15" (padStart adaugă zero în față) */
-export function formatTimp(secunde) {
-  const min = Math.floor(secunde / 60);
-  const sec = Math.floor(secunde % 60);
-  return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
-}
-
 /* Bara de progres + timpii. Click pe bară = derulare la acel punct.
    compact = timpii stau pe același rând cu bara (în bara de jos). */
 export function BaraProgres({ timp, durata, rewind, onDerulare, compact = false }) {
@@ -50,21 +49,21 @@ export function BaraProgres({ timp, durata, rewind, onDerulare, compact = false 
 
   const bara = (
     <div
-      className={rewind ? "progress rewinding" : "progress"}
+      className={rewind ? `${styles.progress} ${styles.rewinding}` : styles.progress}
       onClick={laClickPeBara}
       title="Click pentru derulare"
     >
-      <span className="progress-fill" style={{ width: `${progres * 100}%` }}></span>
+      <span className={styles.fill} style={{ width: `${progres * 100}%` }}></span>
     </div>
   );
 
   // Varianta compactă: 00:12 [=====-----] 04:12
   if (compact) {
     return (
-      <div className="progress-row">
-        <span className="progress-label">{formatTimp(timp)}</span>
+      <div className={styles.row}>
+        <span className={styles.label}>{formatTimp(timp)}</span>
         {bara}
-        <span className="progress-label">{formatTimp(durata)}</span>
+        <span className={styles.label}>{formatTimp(durata)}</span>
       </div>
     );
   }
@@ -72,7 +71,7 @@ export function BaraProgres({ timp, durata, rewind, onDerulare, compact = false 
   return (
     <>
       {bara}
-      <div className="progress-time">
+      <div className={styles.time}>
         <span>{formatTimp(timp)}</span>
         <span>{formatTimp(durata)}</span>
       </div>

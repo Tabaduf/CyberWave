@@ -1,0 +1,151 @@
+/* PlaylistGrid: fiecare playlist în culorile genului său */
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* câte încap pe rând */
+  gap: 14px;
+}
+.card {
+  position: relative;
+  border: 1px solid var(--border);
+  background: var(--card);
+  transition: transform var(--ease), box-shadow var(--ease);
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.btn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-width: 0;
+  padding: 10px;
+  text-align: left;
+}
+.name { margin-top: 8px; font-size: 0.85rem; font-weight: bold; color: var(--text); }
+
+/* Coperta: gradient din culorile genului + grilă fină */
+.cover {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  align-items: end;
+  padding: 10px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px) 0 0 / 100% 12px,
+    linear-gradient(135deg, var(--border), var(--accent) 45%, var(--bg) 90%);
+}
+.initiale {
+  font-size: 2rem;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 10px var(--border);
+}
+
+/* Primele piese din playlist */
+.tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--muted);
+}
+.track {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis; /* titlurile lungi se termină în "..." */
+  font-size: 0.64rem;
+  color: var(--muted);
+  animation: apare 0.3s ease; /* o piesă nou adăugată apare lin */
+}
+.curent { color: var(--accent-hover); }
+.more { font-style: italic; }
+
+/* Butonul ▶ apare pe copertă la hover */
+.play {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.9rem;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity var(--ease), transform var(--ease);
+}
+.card:hover .play,
+.btn:focus-visible .play {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Discul din mână e deasupra cardului: se ridică, strălucește și spune ce se va întâmpla */
+.tinta {
+  transform: translateY(-6px) scale(1.04);
+  box-shadow: 0 0 0 2px var(--accent-hover), 0 0 24px var(--accent-hover);
+}
+.tinta::after {
+  content: "DROP TO ADD";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  color: var(--accent-hover);
+  font-weight: bold;
+  letter-spacing: 2px;
+  pointer-events: none;
+  animation: blink 0.8s steps(2) infinite;
+}
+
+/* Efectul după drop: un inel care pulsează și "+1" care urcă și dispare */
+.dropFx {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  animation: pl-pulse 0.7s ease-out forwards;
+}
+.dropPlus {
+  position: absolute;
+  left: 50%;
+  top: 35%;
+  transform: translateX(-50%);
+  color: var(--accent-hover);
+  font-size: 1.4rem;
+  font-weight: bold;
+  white-space: nowrap;
+  text-shadow: 0 0 10px var(--accent-hover);
+  animation: pl-plus 1s ease-out forwards;
+}
+
+@keyframes apare {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes blink { 50% { opacity: 0.3; } }
+@keyframes pl-pulse {
+  0% { box-shadow: 0 0 0 0 var(--accent-hover); background: color-mix(in srgb, var(--accent-hover) 35%, transparent); }
+  100% { box-shadow: 0 0 0 18px transparent; background: transparent; }
+}
+@keyframes pl-plus {
+  0% { opacity: 0; transform: translate(-50%, 10px) scale(0.6); }
+  25% { opacity: 1; transform: translate(-50%, 0) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -40px) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track { animation: none; }
+}

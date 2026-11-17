@@ -14,7 +14,8 @@
    - culorile vin din paleta genului piesei care cântă;
    - viteza crește cu BPM-ul piesei, iar liniile pulsează pe ritm;
    - muzica nu se oprește: jocul e doar un strat peste pagină,
-     App rămâne pe ecran dedesubt, cu tot state-ul lui.
+     Layout-ul rămâne pe ecran dedesubt, cu tot state-ul lui;
+   - Etapa 8: clasele vin din JocTunel.module.css.
 
    Desenarea se face pe <canvas>, de 60 de ori pe secundă
    (requestAnimationFrame). Valorile care se schimbă la fiecare
@@ -23,6 +24,7 @@
    ============================================================ */
 
 import { useEffect, useRef } from "react";
+import styles from "./JocTunel.module.css";
 
 /* --- Dimensiunile lumii (unități de joc, nu pixeli) --- */
 const BENZI = 12;                          // câte pătrate are tubul pe circumferință
@@ -574,23 +576,23 @@ export default function JocTunel({ piesa, ruleaza, onIesire, onEveniment }) {
 
   return (
     // data-gen: jocul folosește paleta genului piesei care cântă
-    <div className="game" ref={radacinaRef} data-gen={piesa ? piesa.gen : "all"} role="application" aria-label="Joc Tunnel Runner">
-      <canvas ref={canvasRef} className="game-canvas"></canvas>
+    <div className={styles.game} ref={radacinaRef} data-gen={piesa ? piesa.gen : "all"} role="application" aria-label="Joc Tunnel Runner">
+      <canvas ref={canvasRef} className={styles.canvas}></canvas>
 
       {/* Meniul de sus: întoarcere și piesa curentă */}
-      <div className="game-hud">
-        <button type="button" className="game-return" onClick={onIesire}>
+      <div className={styles.hud}>
+        <button type="button" className={styles.return} onClick={onIesire}>
           ◀ RETURN
         </button>
-        <span className="game-track">
+        <span className={styles.track}>
           {piesa ? `♪ ${piesa.titlu} · ${piesa.gen.toUpperCase()} · ${piesa.bpm} BPM` : "♪ NO TRACK"}
         </span>
       </div>
 
-      <p className="game-hint">← → / A D = MOVE  ·  SPACE / ↑ = FIRE  ·  ESC = RETURN</p>
+      <p className={styles.hint}>← → / A D = MOVE  ·  SPACE / ↑ = FIRE  ·  ESC = RETURN</p>
 
       {/* Butonul FIRE (util pe telefon): apelează funcția de tragere din bucla de joc */}
-      <button type="button" className="game-fire" onClick={(e) => {
+      <button type="button" className={styles.fire} onClick={(e) => {
           tragereRef.current?.();
           e.currentTarget.blur(); // fără focus, SPACE nu mai apasă și butonul (ar trage de două ori)
         }}

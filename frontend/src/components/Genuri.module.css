@@ -1,0 +1,65 @@
+/* Genuri: rândul de pastile + meniul MORE */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.label { font-size: 0.75rem; color: var(--muted); margin-right: 4px; }
+
+/* Un gen = o "pastilă" în culorile genului ei */
+.chip {
+  display: inline-block;
+  padding: 3px 12px;
+  border: 1px solid var(--muted);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--text);
+  opacity: 0.75;
+  cursor: pointer;
+  user-select: none;
+  list-style: none; /* pentru <summary> */
+  transition: opacity var(--ease), border-color var(--ease), box-shadow var(--ease), background var(--ease), color var(--ease);
+}
+.chip:hover { opacity: 1; border-color: var(--text); box-shadow: 0 0 8px var(--border); }
+.chip::-webkit-details-marker { display: none; }
+
+.activ {
+  opacity: 1;
+  color: var(--bg);
+  background: var(--text);
+  border-color: var(--text);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+/* Meniul derulant MORE (<details>) */
+.more { position: relative; }
+.more[open] > summary { opacity: 1; border-color: var(--text); }
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 140px;
+  padding: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6), 0 0 12px color-mix(in srgb, var(--border) 25%, transparent);
+  animation: drop-in 0.2s ease;
+}
+.dropdown .chip { text-align: center; }
+
+@keyframes drop-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown { animation: none; }
+}

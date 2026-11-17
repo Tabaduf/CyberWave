@@ -11,6 +11,7 @@
 
    Metodele HTTP (Etapa 7):
      GET    /piese      - citirea listei
+     GET    /piese/3    - o singură piesă (Etapa 8, pagina de detaliu)
      POST   /piese      - adăugarea (fără id; id-ul îl dă serverul)
      PATCH  /piese/3    - modificarea doar a câmpurilor trimise
      DELETE /piese/3    - ștergerea
@@ -39,6 +40,13 @@ async function request(path, options = {}) {
 /* --- Coada (piese) --- */
 export function fetchPiese() {
   return request("/piese");
+}
+
+/* Etapa 8: o singură piesă, pentru pagina de detaliu.
+   resursa = "piese" (coada) sau "sugestii" (panoul RANDOM).
+   Pentru un id inexistent serverul răspunde 404, iar request aruncă eroarea. */
+export function fetchPiesa(id, resursa = "piese") {
+  return request(`/${resursa}/${id}`);
 }
 
 export function createPiesa(piesa) {

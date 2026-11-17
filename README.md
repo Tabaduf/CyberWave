@@ -26,16 +26,44 @@ Sample data used across all stages:
 Details per stage: see the ai-log/ folder.
 
 ## How to run
+```
 cd frontend
 npm install
-npm run dev
+npm run api   # json-server on http://localhost:3001 (keep it running)
+npm run dev   # in a second terminal
+```
 Then open the address printed in the terminal (http://localhost:5173).
+
+## Stage 8: routing and detail page
+Four pages behind React Router, inside one shared `Layout` (header with `NavLink`s, footer,
+the bottom player bar and the game):
+- `/` - the list page (`PiesePage`): form, turntable player and the tabs;
+- `/piese/:id` - the detail page (`PiesaDetaliuPage`), route built from `resource` in `tw.json`.
+  It reads the id with `useParams`, asks the server for exactly that track (`fetchPiesa`) and
+  shows what doesn't fit on the card: big cover, artist / track, duration, liked, playlists,
+  plus "play on deck" and links to the previous / next track. Tracks from the RANDOM tab live
+  at `/sugestii` on the server, so their link adds `?sursa=sugestii`. A missing id (`/piese/999`)
+  shows an error message and a way back;
+- `/despre` - the about page;
+- `*` - the app's 404 page.
+
+The app state (data, player, music, game) moved from `App.jsx` into `hooks/useCyberwave.js`,
+called once in `Layout`, so the music keeps playing while you navigate. Pages read it with
+`useOutletContext()`. Component styles moved to CSS Modules (`*.module.css` next to each
+component); `index.css` keeps only the color variables, genre palettes and shared classes.
+Fixed values moved to `constants.js`.
 
 ## Status
 - [x] Stage 1: static mockup
 - [x] Stage 2: data logic in JavaScript
 - [x] Stage 3: The app now lives in `frontend/`, built with Vite. The track data from stage 2
 moved into the main component; the queue is still printed raw.
+- [x] Stage 4: components and props
+- [x] Stage 5: state, events, light / dark theme
+- [x] Stage 6: data from an API (json-server), loading and error states
+- [x] Stage 7: form and validation, changes saved on the server
+- [x] Stage 8: routing and detail page
+- [ ] Stage 9: own backend with Express
 
 ## Checklist
 
@@ -49,3 +77,16 @@ moved into the main component; the queue is still printed raw.
 | S1-R6 | 2 columns on desktop, 1 under 700px | style.css (@media) | resize < 700px |
 | S1-R7 | visible focus, readable dark theme | style.css | Tab; dark mode |
 | S1-R8 | commit "Stage 1" pushed | commit history | commit history |
+
+### Stage 8 checklist
+
+| ID | Requirement | Where (permalink) | How to check |
+| :--- | :--- | :--- | :--- |
+| S8-R1 | header navigation changes page without reload | frontend/src/App.jsx#L23-L30, frontend/src/components/Layout.jsx#L97-L104 | click links, watch Network |
+| S8-R2 | click on an item opens its detail page | frontend/src/components/PiesaCard.jsx#L62-L64, frontend/src/pages/PiesaDetaliuPage.jsx | click a title |
+| S8-R3 | refresh on the detail URL works; missing id shows an error | frontend/src/pages/PiesaDetaliuPage.jsx#L38-L84 | refresh /piese/1, open /piese/999 |
+| S8-R4 | unknown URL shows the app 404 page | frontend/src/App.jsx#L28 (path="*"), frontend/src/pages/NotFoundPage.jsx | open /ceva |
+| S8-R5 | each component has its .module.css; index.css only shared styles | frontend/src/components, frontend/src/pages, frontend/src/index.css | read |
+| S8-R6 | data-testid attributes from tables 7.3 and 8.2; detail route /piese/:id | Layout.jsx, PiesaCard.jsx, PiesaDetaliuPage.jsx, NotFoundPage.jsx | querySelector in the console |
+| S8-R7 | README Stage 8 section + AI log | README.md, ai-log/etapa-08.md | read |
+| S8-R8 | commit "Stage 8" pushed | link to the commit | commit history |

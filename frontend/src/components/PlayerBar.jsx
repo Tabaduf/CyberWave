@@ -6,9 +6,12 @@
      dreapta  - volumul (slider) și butonul PLAY GAME / EXIT GAME
    Rămâne vizibilă și în timpul jocului, ca muzica să poată fi
    controlată de oriunde. Nu ține stare: totul vine prin props.
+   Etapa 8: clasele vin din PlayerBar.module.css; mini-disc, like-btn
+   și meta-text sunt clase comune (index.css).
    ============================================================ */
 
 import { Iconita, BaraProgres } from "./Comenzi.jsx";
+import styles from "./PlayerBar.module.css";
 
 export default function PlayerBar({
   piesa,
@@ -36,19 +39,19 @@ export default function PlayerBar({
   else if (volumAfisat < 50) iconitaVolum = "volumMic";
 
   return (
-    <footer className="player-bar" aria-label="Control muzică">
+    <footer className={styles.bar} aria-label="Control muzică">
       {/* Unda animată din Etapa 1, acum pe marginea de sus a barei */}
-      <div className="wave" aria-hidden="true"></div>
+      <div className={styles.wave} aria-hidden="true"></div>
 
       {/* STÂNGA: piesa curentă */}
-      <div className="bar-left">
+      <div className={styles.left}>
         {piesa ? (
           <>
             <span className={ruleaza ? "mini-disc spinning" : "mini-disc"} data-gen={piesa.gen} aria-hidden="true">
               {piesa.cover ? <img src={piesa.cover} alt="" /> : <span className="mini-label"></span>}
             </span>
-            <div className="bar-track">
-              <span className="bar-title">{piesa.titlu}</span>
+            <div className={styles.track}>
+              <span className={styles.title}>{piesa.titlu}</span>
               <span className="meta-text">
                 {piesa.gen.toUpperCase()} · {piesa.bpm} BPM
               </span>
@@ -69,26 +72,26 @@ export default function PlayerBar({
       </div>
 
       {/* MIJLOC: comenzile și progresul */}
-      <div className="bar-center">
-        <div className="bar-controls">
-          <button type="button" className="bar-btn" onClick={onInapoi} disabled={!piesa} aria-label="Înapoi">
+      <div className={styles.center}>
+        <div className={styles.controls}>
+          <button type="button" className={styles.btn} onClick={onInapoi} disabled={!piesa} aria-label="Înapoi">
             <Iconita nume="inapoi" marime={18} />
           </button>
           <button
             type="button"
-            className="bar-btn bar-main"
+            className={`${styles.btn} ${styles.main}`}
             onClick={onPlayPause}
             disabled={!piesa}
             aria-label={ruleaza ? "Pauză" : "Play"}
           >
             <Iconita nume={ruleaza ? "pause" : "play"} marime={20} />
           </button>
-          <button type="button" className="bar-btn" onClick={onInainte} disabled={!piesa} aria-label="Înainte">
+          <button type="button" className={styles.btn} onClick={onInainte} disabled={!piesa} aria-label="Înainte">
             <Iconita nume="inainte" marime={18} />
           </button>
           <button
             type="button"
-            className={rewind ? "bar-btn activ" : "bar-btn"}
+            className={rewind ? `${styles.btn} ${styles.activ}` : styles.btn}
             onClick={onRepeat}
             disabled={!piesa || rewind}
             aria-label="Repeat"
@@ -103,10 +106,10 @@ export default function PlayerBar({
       </div>
 
       {/* DREAPTA: volumul și jocul */}
-      <div className="bar-right">
+      <div className={styles.right}>
         <button
           type="button"
-          className="bar-btn"
+          className={styles.btn}
           onClick={onMut}
           aria-label={mut ? "Pornește sunetul" : "Oprește sunetul"}
           aria-pressed={mut}
@@ -115,10 +118,10 @@ export default function PlayerBar({
         </button>
 
         {/* Slider CONTROLAT: value vine din state, onChange îl schimbă.
-            --val colorează partea din stânga a șinei (vezi App.css). */}
+            --val colorează partea din stânga a șinei (vezi PlayerBar.module.css). */}
         <input
           type="range"
-          className="volume-slider"
+          className={styles.slider}
           min="0"
           max="100"
           value={volumAfisat}
@@ -126,9 +129,9 @@ export default function PlayerBar({
           style={{ "--val": `${volumAfisat}%` }}
           aria-label="Volum"
         />
-        <span className="volume-value">{volumAfisat}</span>
+        <span className={styles.volume}>{volumAfisat}</span>
 
-        <button type="button" className={inJoc ? "game-btn activ" : "game-btn"} onClick={onJoc}>
+        <button type="button" className={inJoc ? `${styles.game} ${styles.activ}` : styles.game} onClick={onJoc}>
           <Iconita nume="joc" marime={18} />
           {inJoc ? "EXIT GAME" : "PLAY GAME"}
         </button>

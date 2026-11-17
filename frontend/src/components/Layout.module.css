@@ -1,0 +1,158 @@
+/* Layout: rădăcina aplicației, antetul cu navigația, subsolul, notificarea */
+
+/* Culorile trec lin la paleta noului gen (0.8 s) */
+.app {
+  color: var(--text);
+  transition:
+    --text 0.8s ease,
+    --muted 0.8s ease,
+    --border 0.8s ease,
+    --accent 0.8s ease,
+    --accent-hover 0.8s ease;
+}
+
+/* Strălucirea din spatele paginii, în culoarea genului */
+.app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse at 50% -10%,
+    color-mix(in srgb, var(--border) 22%, transparent),
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+/* Tot conținutul stă deasupra păianjenului din fundal */
+.header, .main, .footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- Păianjenul: fixat pe stânga, centrat pe verticală --- */
+.spider {
+  position: fixed;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%); /* mută desenul în sus cu jumătate din înălțimea lui */
+  z-index: 0;
+  margin: 0;
+  font-size: 0.6rem;
+  line-height: 1.1;
+  font-weight: bold;
+  color: var(--border);
+  text-shadow: 0 0 8px var(--border);
+  opacity: 0.55;
+  pointer-events: none; /* nu blochează click-urile */
+  animation: spider-pulse 4s ease-in-out infinite;
+}
+/* Păianjenul "respiră" încet */
+@keyframes spider-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.65; }
+}
+
+/* --- Antetul --- */
+.header {
+  padding: 28px 20px 18px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.titlu h1 {
+  margin: 0;
+  letter-spacing: 2px;
+  text-shadow: 0 0 5px var(--accent);
+  text-transform: uppercase;
+}
+.titlu p { margin: 5px 0; }
+
+/* Butonul de temă, în colțul antetului */
+.themeToggle {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: background var(--ease), box-shadow var(--ease);
+}
+.themeToggle:hover {
+  background: color-mix(in srgb, var(--text) 15%, transparent);
+  box-shadow: 0 0 10px var(--border);
+}
+
+/* --- Navigația între pagini (NavLink) --- */
+.nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--muted);
+}
+.link {
+  padding: 5px 14px;
+  border: 1px solid transparent;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-decoration: none;
+  opacity: 0.85;
+  transition: background var(--ease), color var(--ease), border-color var(--ease), box-shadow var(--ease), opacity var(--ease);
+}
+.link:hover { opacity: 1; color: var(--text); border-color: var(--border); }
+/* Pagina curentă, marcată automat de NavLink */
+.active,
+.active:hover {
+  opacity: 1;
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 0 12px var(--accent);
+}
+
+/* --- Subsolul și notificarea --- */
+.footer { text-align: center; font-size: 0.8rem; padding: 10px; color: var(--muted); }
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 100px; /* deasupra barei de jos */
+  z-index: 400; /* deasupra jocului și a barei */
+  padding: 8px 16px;
+  transform: translateX(-50%);
+  background: var(--card);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  font-size: 0.8rem;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 40%, transparent);
+  animation: toast 2.2s ease forwards;
+}
+@keyframes toast {
+  0% { opacity: 0; transform: translate(-50%, 12px); }
+  10%, 85% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 6px); }
+}
+
+/* Pe ecrane mai înguste păianjenul stă în spatele panourilor, abia vizibil */
+@media (max-width: 1300px) {
+  .spider { animation: none; opacity: 0.15; }
+}
+@media (max-width: 700px) {
+  .spider { display: none; }
+  .themeToggle { position: static; margin-bottom: 12px; } /* deasupra titlului, nu peste el */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spider { animation: none; }
+}
